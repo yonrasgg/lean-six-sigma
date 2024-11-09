@@ -17,4 +17,18 @@ for row in range(1, dataframe.max_row):
     
     data.append(_row)
 
-print(tabulate(data, headers="firstrow", tablefmt="grid"))
+data = data[7:]
+headers = [
+    "Event Name",
+    "Source/Medium of Session",
+    "Sessions with Interaction",
+    "Sessions",
+    "Events per Session",
+    "Sessions with Interaction per Active User",
+    "Views per Session",
+    "Bounce Rate",
+    "Interaction Rate",
+    "Average Interaction Time per Session"
+]
+
+print(tabulate(data, headers=headers))
