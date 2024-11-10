@@ -4,127 +4,128 @@ This project contains tools for analyzing Google Analytics 4 (GA4) data using Py
 
 ## Files Structure
 
-Copy
-
-Insert at cursor
-```markdown
+```
 src/
-├── app.py # Main application file
-└── gagernr.py # GA4 data generation and reporting module
+├── app.py          # Main application file
+└── gagernr.py      # GA4 data generation and reporting module
 ```
 
 ## Requirements
 
-Copy
-
-Insert at cursor
-text
-google-analytics-data
-pandas
-numpy
-python-dotenv
-
+- google-analytics-data
+- pandas
+- numpy
+- python-dotenv
 
 ## Setup
 
-1. Create a `.env` file in the project root with:
+1. Clone the repository:
+
+```sh
+git clone https://github.com/yourusername/lean-six-sigma.git
+cd lean-six-sigma
+```
+
+2. Create a `.env` file in the project root with:
 
 ```env
 GA4_PROPERTY_ID=your_property_id_here
 GOOGLE_APPLICATION_CREDENTIALS=/path/to/your/credentials.json
 ```
 
-Copy
+3. Install dependencies:
 
-Insert at cursor
-text
-Install dependencies:
-
+```sh
 pip install -r requirements.txt
+```
 
-Copy
+## Usage
 
-Insert at cursor
-bash
-File Descriptions
-src/app.py
-Main application file that:
+### Setting Up Environment Variables
 
-Handles GA4 data retrieval and processing
+Ensure you have set up your environment variables in the `.env` file as mentioned in the setup section.
 
-Calculates process capability indices
+### Running the Main Application
 
-Implements error handling and logging
+To run the main application, execute:
 
-Processes metrics like:
-
-Total Users
-
-Sessions
-
-Engaged Sessions
-
-Event Count
-
-Screen Page Views
-
-Bounce Rate
-
-User Engagement Duration
-
-Average Session Duration
-
-src/gagernr.py
-GA4 data generation and reporting module that:
-
-Provides custom report generation
-
-Handles GA4 API interactions
-
-Implements data transformation utilities
-
-Usage
-Set up your environment variables
-
-Run the main application:
-
+```sh
 python src/app.py
+```
 
-Copy
+## Functionality
 
-Insert at cursor
-bash
-Authentication
-Set up a Google Cloud Project
+### Process Capability Indices
 
-Enable the Google Analytics Data API
+The application calculates various process capability indices to help in Lean Six Sigma analysis.
 
-Create a service account and download credentials
+### Error Handling and Logging
 
-Set the GOOGLE_APPLICATION_CREDENTIALS environment variable
+Implements robust error handling and logging mechanisms to ensure smooth operation and easier debugging.
 
-GA4 Property ID
+### Metrics Processed
+
+The application processes the following metrics:
+
+- Total Users
+- Sessions
+- Engaged Sessions
+- Event Count
+- Screen Page Views
+- Bounce Rate
+- User Engagement Duration
+- Average Session Duration
+
+### GA4 Data Generation and Reporting Module (`src/gagernr.py`)
+
+This module:
+
+- Provides custom report generation
+- Handles GA4 API interactions
+- Implements data transformation utilities
+
+## Authentication
+
+### Enable the Google Analytics Data API
+
+1. Go to the [Google Cloud Console](https://console.cloud.google.com/).
+2. Enable the Google Analytics Data API for your project.
+
+### Create a Service Account and Download Credentials
+
+1. In the Google Cloud Console, go to the "IAM & Admin" section.
+2. Create a new service account.
+3. Download the JSON credentials file and save it to a secure location.
+
+### Set the `GOOGLE_APPLICATION_CREDENTIALS` Environment Variable
+
+Set the path to your credentials file in the `.env` file:
+
+```env
+GOOGLE_APPLICATION_CREDENTIALS=/path/to/your/credentials.json
+```
+
+### GA4 Property ID
+
 To find your GA4 Property ID:
 
-Go to GA4 Admin
+1. Go to GA4 Admin.
+2. Click on Property Settings.
+3. Look for "Property ID".
 
-Click on Property Settings
+## Contributing
 
-Look for "Property ID"
+1. Fork the repository.
+2. Create a feature branch (`git checkout -b feature-branch`).
+3. Commit your changes (`git commit -am 'Add new feature'`).
+4. Push to the branch (`git push origin feature-branch`).
+5. Create a Pull Request.
 
-Contributing
-Fork the repository
+## License
 
-Create a feature branch
+This project is licensed under the [GNU General Public License v3.0](https://github.com/yonrasgg/lean-six-sigma/blob/main/LICENSE).
 
-Commit changes
-
-Push to the branch
-
-Create a Pull Request
-
-License
-
+## Summary
 
 This README provides:
 1. Project overview
@@ -134,5 +135,3 @@ This README provides:
 5. Usage guidelines
 6. Authentication setup
 7. Contributing guidelines
-
-You can customize it further based on your specific needs. Would you like me to modify any section or add more details
