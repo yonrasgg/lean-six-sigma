@@ -7,11 +7,11 @@ This project contains tools for analyzing Google Analytics 4 (GA4) data using Py
 Copy
 
 Insert at cursor
-markdown
+```markdown
 src/
 ├── app.py # Main application file
 └── gagernr.py # GA4 data generation and reporting module
-
+```
 
 ## Requirements
 
@@ -28,9 +28,11 @@ python-dotenv
 ## Setup
 
 1. Create a `.env` file in the project root with:
+
 ```env
 GA4_PROPERTY_ID=your_property_id_here
 GOOGLE_APPLICATION_CREDENTIALS=/path/to/your/credentials.json
+```
 
 Copy
 
