@@ -13,6 +13,7 @@ from google.analytics.data_v1beta.types import (
 import os
 from typing import Optional, Dict, List, Any
 from dotenv import load_dotenv
+import matplotlib.pyplot as plt
 
 # Load environment variables from .env file
 load_dotenv()
@@ -42,6 +43,7 @@ class AnalyticsDataProcessor:
     }
 
     def __init__(self):
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "blogtndx-59d7dc876bd1.json"
         self.client = BetaAnalyticsDataClient()
 
     def get_analytics_data(self, property_id: str) -> Optional[pd.DataFrame]:
@@ -138,13 +140,34 @@ def main():
 
         # Calculate Cp for numeric columns
         numeric_columns = df.select_dtypes(include=[np.number]).columns
+        cp_values = {}
         for column in numeric_columns:
             usl = df[column].max()
             lsl = df[column].min()
             
             cp_value = calculate_cp(df[column].values, usl, lsl)
             if cp_value is not None:
+                cp_values[column] = cp_value
                 logger.info(f"Process Capability Index (Cp) for {column}: {cp_value:.2f}")
+
+        # Plot Cp values
+        if cp_values:
+            plt.figure(figsize=(12, 8))
+            bars = plt.bar(cp_values.keys(), cp_values.values(), color='skyblue')
+            plt.xlabel('Metrics')
+            plt.ylabel('Cp Value')
+            plt.title('Process Capability Index (Cp) for Numeric Columns')
+            plt.xticks(rotation=45)
+            plt.tight_layout()
+
+            # Annotate bars with Cp values
+            for bar in bars:
+                yval = bar.get_height()
+                plt.text(bar.get_x() + bar.get_width()/2, yval, round(yval, 2), 
+                         ha='center', va='bottom', fontsize=10, color='black')
+
+            plt.savefig('cp_values_chart.png')  # Save the plot as a file
+            plt.show()  # Display the plot
 
         logger.info("Analysis completed successfully")
         return df
@@ -155,4 +178,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
