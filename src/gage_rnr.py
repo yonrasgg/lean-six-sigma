@@ -1,49 +1,185 @@
-from process_capacity import np, os, plt
-from GageRnR import GageRnR
+import numpy as np
+import os
+from pathlib import Path
+import matplotlib.pyplot as plt
+class GageRnR:
+    def __init__(self, data: np.ndarray, output_dir: str):
+        self.data = data
+        self.o_var = None
+        self.p_var = None
+        self.op_var = None
+        self.e_var = None
 
-def perform_gage_rnr_analysis(data: np.ndarray, output_dir: str):
-    os.makedirs(output_dir, exist_ok=True)
-    g = GageRnR(data)
-    g.calculate()
-    summary = g.summary()
-    print(summary)
+    def calculate(self):
+        # Placeholder for actual Gage R&R calculation logic
+        self.o_var = np.var(self.data, axis=(1, 2)).mean()  # Example calculation
+        self.p_var = np.var(self.data, axis=(0, 2)).mean()  # Example calculation
+        self.op_var = np.var(self.data, axis=(0, 1)).mean()  # Example calculation
+        self.e_var = np.var(self.data) - (self.o_var + self.p_var + self.op_var)  # Example calculation
 
-    sources = ["Operator", "Part", "Operator by Part", "Measurement"]
-    variances = g.get_variances()  # Assuming this method exists in GageRnR
-    std_devs = g.get_std_devs()  # Assuming this method exists in GageRnR
+    def summary(self):
+        return (
+            f"Operator Variance: {self.o_var}\n"
+            f"Part Variance: {self.p_var}\n"
+            f"Operator by Part Variance: {self.op_var}\n"
+            f"Repeatability Variance: {self.e_var}\n"
+        )
+from typing import List, Dict, Tuple
+from dataclasses import dataclass
 
-    def plot_chart(values, ylabel, title, filename, color):
-        plt.figure(figsize=(12, 8))
-        bars = plt.bar(sources, values, color=color)
-        plt.xlabel('Sources of Variance')
-        plt.ylabel(ylabel)
-        plt.title(title)
-        plt.xticks(rotation=45)
-        plt.tight_layout()
+@dataclass
+class GageComponents:
+    """Data class to store Gage R&R components"""
+    variances: List[float]
+    std_devs: List[float]
+    sources: List[str] = None
+
+@dataclass
+class GageComponents:
+    """Data class to store Gage R&R components"""
+    variances: List[float]
+    std_devs: List[float]
+    sources: List[str] = None
+
+    def __post_init__(self):
+        self.sources = ["Operator", "Part", "Operator by Part", "Repeatability"]
+
+class GageRnRAnalyzer:
+    """Class to handle Gage R&R analysis"""
+    def __init__(self, data: np.ndarray, output_dir: str):
+        self.data = data
+        self.output_dir = Path(output_dir)
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+        self.gage = GageRnR(data, output_dir)
+        
+    def _extract_components(self) -> GageComponents:
+        """Extract variance and standard deviation components"""
+        # Placeholder for extracting components logic
+        variances = [
+            self.gage.o_var if not np.isnan(self.gage.o_var) else 0.0,  # Operator
+            self.gage.p_var if not np.isnan(self.gage.p_var) else 0.0,  # Part
+            self.gage.op_var if not np.isnan(self.gage.op_var) else 0.0,  # Operator by Part
+            self.gage.e_var if not np.isnan(self.gage.e_var) else 0.0   # Repeatability
+        ]
+        
+        # Calculate standard deviations from variances
+        std_devs = [np.sqrt(var) if var > 0 else 0.0 for var in variances]
+        
+        return GageComponents(variances, std_devs)
+
+    def _create_chart(self, 
+                     values: List[float], 
+                     ylabel: str, 
+                     title: str, 
+                     filename: str, 
+                     color: str) -> str:
+        """Create and save a chart"""
+        fig, ax = plt.subplots(figsize=(12, 8))
+        bars = ax.bar(self.components.sources, values, color=color)
+        
+        ax.set_xlabel('Sources of Variance')
+        ax.set_ylabel(ylabel)
+        ax.set_title(title)
+        plt.setp(ax.get_xticklabels(), rotation=45)
+        
+        # Add value labels
         for bar in bars:
-            yval = bar.get_height()
-            plt.text(bar.get_x() + bar.get_width()/2, yval, round(yval, 3), ha='center', va='bottom', fontsize=10, color='black')
-        path = os.path.join(output_dir, filename)
-        plt.savefig(path)
-        plt.show()
-        return path
+            height = bar.get_height()
+            ax.text(bar.get_x() + bar.get_width()/2., height,
+                   f'{height:.4f}',
+                   ha='center', va='bottom')
+        
+        fig.tight_layout()
+        filepath = self.output_dir / filename
+        fig.savefig(filepath, dpi=300, bbox_inches='tight')
+        plt.close(fig)
+        return filename
 
-    variance_chart_path = plot_chart(variances, 'Variance (σ²)', 'Gage R&R Variance Analysis', 'gage_rnr_variance_chart.png', 'skyblue')
-    std_dev_chart_path = plot_chart(std_devs, 'Standard Deviation (σ)', 'Gage R&R Standard Deviation Analysis', 'gage_rnr_std_dev_chart.png', 'lightgreen')
+    def _generate_html_report(self, 
+                            summary: str, 
+                            variance_chart: str, 
+                            std_dev_chart: str) -> None:
+        """Generate HTML report"""
+        html_template = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Gage R&R Report</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
+                pre { background-color: #f5f5f5; padding: 15px; border-radius: 5px; }
+                img { max-width: 100%; height: auto; margin: 20px 0; border-radius: 5px; }
+                h1, h2 { color: #333; }
+                .chart-container { margin: 20px 0; }
+                .summary { margin: 20px 0; }
+            </style>
+        </head>
+        <body>
+            <h1>Gage R&R Report</h1>
+            <div class="summary">
+                <h2>Analysis Summary</h2>
+                <pre>{summary}</pre>
+            </div>
+            <div class="chart-container">
+                <h2>Variance Analysis</h2>
+                <img src="{variance_chart}" alt="Variance Chart">
+            </div>
+            <div class="chart-container">
+                <h2>Standard Deviation Analysis</h2>
+                <img src="{std_dev_chart}" alt="Standard Deviation Chart">
+            </div>
+        </body>
+        </html>
+        """
+        
+        report_path = self.output_dir / 'gage_rnr_report.html'
+        report_path.write_text(
+            html_template.format(
+                summary=summary,
+                variance_chart=variance_chart,
+                std_dev_chart=std_dev_chart
+            )
+        )
+        print(f"Report saved to {report_path}")
 
-    report_path = os.path.join(output_dir, 'gage_rnr_report.html')
-    with open(report_path, 'w') as f:
-        f.write(f'<html><head><title>Gage R&R Report</title></head><body><h1>Gage R&R Report</h1><pre>{summary}</pre>')
-        f.write(f'<h2>Variance Chart</h2><img src="{variance_chart_path}" alt="Variance Chart">')
-        f.write(f'<h2>Standard Deviation Chart</h2><img src="{std_dev_chart_path}" alt="Standard Deviation Chart"></body></html>')
-    print(f"Report saved to {report_path}")
+    def analyze(self) -> None:
+        """Perform the complete Gage R&R analysis"""
+        # Calculate Gage R&R
+        self.gage.calculate()
+        summary = self.gage.summary()
+        print(summary)
+
+        # Extract components
+        self.components = self._extract_components()
+
+        # Create charts
+        variance_chart = self._create_chart(
+            self.components.variances,
+            'Variance (σ²)',
+            'Gage R&R Variance Analysis',
+            'gage_rnr_variance_chart.png',
+            'skyblue'
+        )
+
+        std_dev_chart = self._create_chart(
+            self.components.std_devs,
+            'Standard Deviation (σ)',
+            'Gage R&R Standard Deviation Analysis',
+            'gage_rnr_std_dev_chart.png',
+            'lightgreen'
+        )
+        
+        # Generate HTML report
+        self._generate_html_report(summary, variance_chart, std_dev_chart)
+
+    def fetch_data_from_ga4_api(self) -> np.ndarray:
+        self.analyze()
+        print("Gage R&R analysis completed successfully.")
+        return self.data
 
 if __name__ == "__main__":
-    data = np.array([
-        [[3.29, 3.41, 3.64], [2.44, 2.32, 2.42], [4.34, 4.17, 4.27], [3.47, 3.5, 3.64], [2.2, 2.08, 2.16]],
-        [[3.08, 3.25, 3.07], [2.53, 1.78, 2.32], [4.19, 3.94, 4.34], [3.01, 4.03, 3.2], [2.44, 1.8, 1.72]],
-        [[3.04, 2.89, 2.85], [1.62, 1.87, 2.04], [3.88, 4.09, 3.67], [3.14, 3.2, 3.11], [1.54, 1.93, 1.55]]
-    ])
-    output_dir = 'gage_rnr_report'
-    perform_gage_rnr_analysis(data, output_dir)
+    # Example usage
+    data = np.random.rand(10, 10, 10)  # Example data
+    analyzer = GageRnRAnalyzer(data, 'gage_rnr_report')
+    analyzer.analyze()
     print("Gage R&R analysis completed successfully.")
