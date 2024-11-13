@@ -86,7 +86,7 @@ def calculate_bounce_rate_impact(responses):
 
 def main():
     try:
-        output_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "pareto_repot")
+        output_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "pareto_report")
         os.makedirs(output_dir, exist_ok=True)
         
         data = fetch_data_from_google_analytics()
