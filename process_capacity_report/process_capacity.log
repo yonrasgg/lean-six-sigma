@@ -1,0 +1,32 @@
+2024-11-15 03:45:27,192 - __main__ - INFO - Retrieved data with columns: ['eventName', 'totalUsers', 'sessions', 'engagedSessions', 'eventCount', 'screenPageViews', 'bounceRate', 'userEngagementDuration', 'averageSessionDuration']
+2024-11-15 03:45:27,192 - __main__ - INFO - Data shape: (6, 9)
+2024-11-15 03:45:27,194 - __main__ - INFO - Calculated capability metrics for totalUsers:
+  Cp=2.09, Cpk=0.03, Cpm=0.38
+  Mean=106.83, Target=500.00
+  USL=1000.00, LSL=100.00
+2024-11-15 03:45:27,195 - __main__ - INFO - Calculated capability metrics for sessions:
+  Cp=2.15, Cpk=-0.09, Cpm=0.34
+  Mean=172.50, Target=800.00
+  USL=1500.00, LSL=200.00
+2024-11-15 03:45:27,196 - __main__ - INFO - Calculated capability metrics for engagedSessions:
+  Cp=3.30, Cpk=-0.53, Cpm=0.27
+  Mean=81.00, Target=600.00
+  USL=1000.00, LSL=150.00
+2024-11-15 03:45:27,197 - __main__ - INFO - Calculated capability metrics for eventCount:
+  Cp=2.25, Cpk=-0.07, Cpm=0.47
+  Mean=426.17, Target=2000.00
+  USL=5000.00, LSL=500.00
+2024-11-15 03:45:27,198 - __main__ - WARNING - Insufficient valid data points for screenPageViews
+2024-11-15 03:45:27,199 - __main__ - INFO - Calculated capability metrics for bounceRate:
+  Cp=24.67, Cpk=-24.06, Cpm=0.19
+  Mean=0.50, Target=35.00
+  USL=60.00, LSL=20.00
+2024-11-15 03:45:27,203 - __main__ - INFO - Calculated capability metrics for userEngagementDuration:
+  Cp=0.05, Cpk=-0.27, Cpm=0.03
+  Mean=3263.67, Target=300.00
+  USL=900.00, LSL=60.00
+2024-11-15 03:45:27,204 - __main__ - INFO - Calculated capability metrics for averageSessionDuration:
+  Cp=1.36, Cpk=0.20, Cpm=0.74
+  Mean=72.73, Target=180.00
+  USL=600.00, LSL=30.00
+2024-11-15 03:45:37,548 - __main__ - INFO - Process capacity report generated successfully
