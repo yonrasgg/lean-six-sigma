@@ -1,8 +1,8 @@
-# Google Analytics Data Processing
+# Lean Six Sigma Analysis
 
-This project contains tools for analyzing Google Analytics 4 (GA4) data using Python, focusing on Lean Six Sigma metrics.
+This repository contains scripts for performing Lean Six Sigma analysis using data from Google Analytics 4 (GA4). The scripts calculate various process capability indices, perform Gage R&R analysis, and generate Pareto charts to help identify and improve process performance.
 
-## Files Structure
+## Directory Structure
 
 ```
 src/
