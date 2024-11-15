@@ -2,6 +2,7 @@ import numpy as np
 import os
 from pathlib import Path
 import matplotlib.pyplot as plt
+
 class GageRnR:
     def __init__(self, data: np.ndarray, output_dir: str):
         self.data = data
@@ -11,12 +12,20 @@ class GageRnR:
         self.e_var = None
 
     def calculate(self):
-        # Placeholder for actual Gage R&R calculation logic
-        self.o_var = np.var(self.data, axis=(1, 2)).mean()  # Example calculation
-        self.p_var = np.var(self.data, axis=(0, 2)).mean()  # Example calculation
-        self.op_var = np.var(self.data, axis=(0, 1)).mean()  # Example calculation
-        self.e_var = np.var(self.data) - (self.o_var + self.p_var + self.op_var)  # Example calculation
-
+        # Calculate operator variance - variation between operators
+        self.o_var = np.var(np.mean(self.data, axis=2), axis=1)
+        
+        # Calculate part variance - variation between parts
+        self.p_var = np.var(np.mean(self.data, axis=2), axis=0)
+        
+        # Calculate operator by part interaction variance
+        means = np.mean(self.data, axis=2)
+        interaction = means - np.mean(means, axis=0) - np.mean(means, axis=1)[:, np.newaxis]
+        self.op_var = np.var(interaction)
+        
+        # Calculate repeatability/equipment variance
+        self.e_var = np.var(self.data - np.mean(self.data, axis=2)[:,:,np.newaxis])
+        
     def summary(self):
         return (
             f"Operator Variance: {self.o_var}\n"

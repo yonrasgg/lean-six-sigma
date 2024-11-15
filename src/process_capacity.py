@@ -1,8 +1,9 @@
 import pandas as pd
-import datetime
-from dateutil.parser import parse
-import logging
 import numpy as np
+from typing import Optional, Dict, NamedTuple
+import matplotlib.pyplot as plt
+from pathlib import Path
+import logging
 from google.analytics.data_v1beta import BetaAnalyticsDataClient
 from google.analytics.data_v1beta.types import (
     DateRange,
@@ -11,39 +12,84 @@ from google.analytics.data_v1beta.types import (
     RunReportRequest,
 )
 import os
-from typing import Optional, Dict, List, Any
 from dotenv import load_dotenv
-import matplotlib.pyplot as plt
 
-# Load environment variables from .env file
+# Load environment variables and setup
 load_dotenv()
 
-# Set up logging with a more detailed format
+OUTPUT_DIR = Path("process_capacity_report")
+OUTPUT_DIR.mkdir(exist_ok=True)
+
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    filename=OUTPUT_DIR / 'process_capacity.log'
 )
 logger = logging.getLogger(__name__)
 
+class MetricSpecification(NamedTuple):
+    """Specification limits and target for a metric"""
+    usl: float  # Upper Specification Limit
+    lsl: float  # Lower Specification Limit
+    target: float  # Target Value
+
+class ProcessCapabilityMetrics(NamedTuple):
+    """Process capability metrics with additional context"""
+    cp: float
+    cpk: float
+    cpm: float
+    mean: float
+    std: float
+    target: float
+    usl: float
+    lsl: float
+
 class AnalyticsDataProcessor:
-    """Class to handle Google Analytics data processing"""
-    
-    COLUMN_MAPPING = {
-        'eventName': 'Nombre del evento',
-        'source': 'Fuente',
-        'medium': 'Medio',
-        'totalUsers': 'Usuarios totales',
-        'sessions': 'Sesiones',
-        'engagedSessions': 'Sesiones con interacción',
-        'eventCount': 'Número de eventos',
-        'screenPageViews': 'Vistas de página',
-        'bounceRate': 'Porcentaje de rebote',
-        'userEngagementDuration': 'Duración del compromiso',
-        'averageSessionDuration': 'Duración media de la sesión'
+    # Define specification limits for each metric
+    METRIC_SPECIFICATIONS = {
+        'totalUsers': MetricSpecification(
+            usl=1000,  # max expected users
+            lsl=100,   # min acceptable users
+            target=500 # target users
+        ),
+        'sessions': MetricSpecification(
+            usl=1500,
+            lsl=200,
+            target=800
+        ),
+        'engagedSessions': MetricSpecification(
+            usl=1000,
+            lsl=150,
+            target=600
+        ),
+        'eventCount': MetricSpecification(
+            usl=5000,
+            lsl=500,
+            target=2000
+        ),
+        'screenPageViews': MetricSpecification(
+            usl=3000,
+            lsl=300,
+            target=1500
+        ),
+        'bounceRate': MetricSpecification(
+            usl=60,    # 60% maximum acceptable bounce rate
+            lsl=20,    # 20% minimum acceptable bounce rate
+            target=35  # 35% target bounce rate
+        ),
+        'userEngagementDuration': MetricSpecification(
+            usl=900,   # 15 minutes maximum
+            lsl=60,    # 1 minute minimum
+            target=300 # 5 minutes target
+        ),
+        'averageSessionDuration': MetricSpecification(
+            usl=600,   # 10 minutes maximum
+            lsl=30,    # 30 seconds minimum
+            target=180 # 3 minutes target
+        )
     }
 
     def __init__(self):
-        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "blogtndx-59d7dc876bd1.json"
         self.client = BetaAnalyticsDataClient()
 
     def get_analytics_data(self, property_id: str) -> Optional[pd.DataFrame]:
@@ -94,87 +140,186 @@ class AnalyticsDataProcessor:
             rows.append(row_dict)
         
         df = pd.DataFrame(rows)
-        return df.rename(columns=self.COLUMN_MAPPING)
+        return df
 
-def calculate_cp(data: np.ndarray, usl: float, lsl: float) -> Optional[float]:
-    """
-    Calculate the process capability index (Cp).
-    
-    Args:
-        data (np.ndarray): The process data
-        usl (float): Upper specification limit
-        lsl (float): Lower specification limit
-    
-    Returns:
-        Optional[float]: The calculated Cp value, or None if calculation is not possible
-    """
-    try:
-        if usl <= lsl:
-            logger.warning("USL must be greater than LSL for Cp calculation.")
-            return None
+    def calculate_process_capability(
+        self, 
+        data: pd.Series,
+        metric_name: str
+    ) -> Optional[ProcessCapabilityMetrics]:
+        """
+        Calculate process capability metrics using specified limits and targets
         
-        sigma = np.std(data, ddof=1)
-        if np.isclose(sigma, 0):
-            logger.warning("Standard deviation is zero, Cp calculation not possible.")
+        Args:
+            data: Series containing metric values
+            metric_name: Name of the metric being analyzed
+            
+        Returns:
+            ProcessCapabilityMetrics if calculation successful, None otherwise
+        """
+        try:
+            if len(data) < 2:
+                logger.warning(f"Insufficient data points for {metric_name}")
+                return None
+
+            # Remove zeros and nulls
+            data = data[data.notna() & (data != 0)]
+            
+            if len(data) < 2:
+                logger.warning(f"Insufficient valid data points for {metric_name}")
+                return None
+
+            # Get specification limits and target
+            spec = self.METRIC_SPECIFICATIONS.get(metric_name)
+            if not spec:
+                logger.warning(f"No specifications defined for {metric_name}")
+                return None
+
+            mean = data.mean()
+            std = data.std()
+            
+            if std == 0:
+                logger.warning(f"Zero standard deviation found for {metric_name}")
+                return None
+
+            # Calculate Cp using specified limits
+            cp = (spec.usl - spec.lsl) / (6 * std)
+            
+            # Calculate Cpu and Cpl
+            cpu = (spec.usl - mean) / (3 * std)
+            cpl = (mean - spec.lsl) / (3 * std)
+            
+            # Calculate Cpk as minimum of Cpu and Cpl
+            cpk = min(cpu, cpl)
+            
+            # Calculate Cpm using specified target
+            cpm = cp / np.sqrt(1 + ((mean - spec.target) / std) ** 2)
+
+            return ProcessCapabilityMetrics(
+                cp=cp,
+                cpk=cpk,
+                cpm=cpm,
+                mean=mean,
+                std=std,
+                target=spec.target,
+                usl=spec.usl,
+                lsl=spec.lsl
+            )
+
+        except Exception as e:
+            logger.error(f"Error calculating capability for {metric_name}: {str(e)}")
             return None
+
+    def calculate_cp_values(self, data: pd.DataFrame) -> Dict[str, ProcessCapabilityMetrics]:
+        """Calculate process capability metrics for all specified metrics"""
+        capability_values = {}
         
-        return (usl - lsl) / (6 * sigma)
-    except Exception as e:
-        logger.error(f"Error in Cp calculation: {str(e)}")
-        return None
+        for metric_name in self.METRIC_SPECIFICATIONS.keys():
+            if metric_name in data.columns:
+                metrics = self.calculate_process_capability(data[metric_name], metric_name)
+                if metrics:
+                    capability_values[metric_name] = metrics
+                    logger.info(
+                        f"Calculated capability metrics for {metric_name}:\n"
+                        f"  Cp={metrics.cp:.2f}, Cpk={metrics.cpk:.2f}, Cpm={metrics.cpm:.2f}\n"
+                        f"  Mean={metrics.mean:.2f}, Target={metrics.target:.2f}\n"
+                        f"  USL={metrics.usl:.2f}, LSL={metrics.lsl:.2f}"
+                    )
+
+        return capability_values
+
+def plot_cp_values(capability_values: Dict[str, ProcessCapabilityMetrics], output_path: Path) -> None:
+    if not capability_values:
+        logger.error("No capability values to plot")
+        return
+
+    fig, ax = plt.subplots(figsize=(15, 8))
+    
+    # Prepare data for plotting
+    metrics_data = {
+        k: {'Cp': v.cp, 'Cpk': v.cpk, 'Cpm': v.cpm} 
+        for k, v in capability_values.items()
+    }
+    metrics_df = pd.DataFrame.from_dict(metrics_data, orient='index')
+    
+    # Plot Capability Indices
+    metrics_df.plot(kind='bar', ax=ax, width=0.8)
+    ax.set_title('Process Capability Indices by Metric', fontsize=14, pad=20)
+    ax.set_xlabel('Metrics', fontsize=12)
+    ax.set_ylabel('Capability Index Value', fontsize=12)
+    ax.axhline(y=1.33, color='g', linestyle='--', label='Target Capability (1.33)')
+    ax.legend(loc='upper right')
+    ax.grid(True, axis='y', linestyle='--', alpha=0.7)
+    plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
+    
+    # Add value labels
+    for p in ax.patches:
+        ax.annotate(f'{p.get_height():.2f}', 
+                    (p.get_x() + p.get_width() / 2., p.get_height()), 
+                    ha='center', va='center', xytext=(0, 10), 
+                    textcoords='offset points', fontsize=10, color='black')
+
+    plt.tight_layout()
+    plt.savefig(output_path / 'process_capability_analysis.png', 
+                bbox_inches='tight', dpi=300)
+    plt.close()
+
+    # Plot normal distribution for each metric
+    for metric, values in capability_values.items():
+        fig, ax = plt.subplots(figsize=(10, 6))
+        mean = values.mean
+        std = values.std
+        usl = values.usl
+        lsl = values.lsl
+        target = values.target
+
+        # Generate data for normal distribution
+        x = np.linspace(mean - 4*std, mean + 4*std, 100)
+        y = (1 / (std * np.sqrt(2 * np.pi))) * np.exp(-0.5 * ((x - mean) / std) ** 2)
+
+        ax.plot(x, y, label='Normal Distribution', color='blue')
+        ax.axvline(mean, color='black', linestyle='--', label='Mean')
+        ax.axvline(usl, color='red', linestyle='--', label='USL')
+        ax.axvline(lsl, color='red', linestyle='--', label='LSL')
+        ax.axvline(target, color='green', linestyle='--', label='Target')
+
+        ax.fill_between(x, y, where=(x >= lsl) & (x <= usl), color='blue', alpha=0.1)
+        ax.set_title(f'Normal Distribution for {metric}', fontsize=14, pad=20)
+        ax.set_xlabel('Value', fontsize=12)
+        ax.set_ylabel('Probability Density', fontsize=12)
+        ax.legend(loc='upper right')
+        ax.grid(True, linestyle='--', alpha=0.7)
+
+        plt.tight_layout()
+        plt.savefig(output_path / f'{metric}_normal_distribution.png', 
+                    bbox_inches='tight', dpi=300)
+        plt.close()
 
 def main():
     try:
-        # Get property ID from environment variable
         property_id = os.getenv('GA4_PROPERTY_ID')
         if not property_id:
             raise ValueError("GA4_PROPERTY_ID environment variable not set")
 
-        # Initialize analytics processor
         processor = AnalyticsDataProcessor()
         
-        # Get analytics data
         df = processor.get_analytics_data(property_id)
-        if df is None:
+        if df is None or df.empty:
             raise ValueError("Failed to fetch analytics data")
 
-        # Calculate Cp for numeric columns
-        numeric_columns = df.select_dtypes(include=[np.number]).columns
-        cp_values = {}
-        for column in numeric_columns:
-            usl = df[column].max()
-            lsl = df[column].min()
-            
-            cp_value = calculate_cp(df[column].values, usl, lsl)
-            if cp_value is not None:
-                cp_values[column] = cp_value
-                logger.info(f"Process Capability Index (Cp) for {column}: {cp_value:.2f}")
+        logger.info(f"Retrieved data with columns: {df.columns.tolist()}")
+        logger.info(f"Data shape: {df.shape}")
 
-        # Plot Cp values
-        if cp_values:
-            plt.figure(figsize=(12, 8))
-            bars = plt.bar(cp_values.keys(), cp_values.values(), color='skyblue')
-            plt.xlabel('Metrics')
-            plt.ylabel('Cp Value')
-            plt.title('Process Capability Index (Cp) for Numeric Columns')
-            plt.xticks(rotation=45)
-            plt.tight_layout()
+        capability_values = processor.calculate_cp_values(df)
+        if not capability_values:
+            raise ValueError("No valid capability values calculated")
 
-            # Annotate bars with Cp values
-            for bar in bars:
-                yval = bar.get_height()
-                plt.text(bar.get_x() + bar.get_width()/2, yval, round(yval, 2), 
-                         ha='center', va='bottom', fontsize=10, color='black')
-
-            plt.savefig('cp_values_chart.png')  # Save the plot as a file
-            plt.show()  # Display the plot
-
-        logger.info("Analysis completed successfully")
-        return df
+        plot_cp_values(capability_values, OUTPUT_DIR)
+        df.to_csv(OUTPUT_DIR / 'analytics_data.csv', index=False)
+        logger.info("Process capacity report generated successfully")
 
     except Exception as e:
         logger.error(f"Error in main execution: {str(e)}")
-        raise
 
 if __name__ == "__main__":
     main()
