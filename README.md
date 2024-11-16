@@ -1,13 +1,38 @@
 # Lean Six Sigma Analysis
 
-This repository contains scripts for performing Lean Six Sigma analysis using data from Google Analytics 4 (GA4). The scripts calculate various process capability indices, perform Gage R&R analysis, and generate Pareto charts to help identify and improve process performance.
+This repository contains scripts for performing Lean Six Sigma analysis using data from Google Analytics 4 (GA4). The scripts calculate various process capability indices, perform Gage R&R analysis, generate Pareto charts, and conduct ANOVA analysis to help identify and improve process performance.
 
 ## Directory Structure
 
 ```
 src/
-├── app.py          # Main application file
-└── gagernr.py      # GA4 data generation and reporting module
+├── LICENSE
+├── README.md
+├── blogtndx-59d7dc876bd1.json
+├── gage_rnr_report
+│   ├── gage_rnr_report.html
+│   ├── gage_rnr_std_dev_chart.png
+│   └── gage_rnr_variance_chart.png
+├── pareto_report
+│   ├── pareto_analysis_results.csv
+│   └── pareto_chart.png
+├── process_capacity_report
+│   ├── analytics_data.csv
+│   ├── averageSessionDuration_normal_distribution.png
+│   ├── bounceRate_normal_distribution.png
+│   ├── engagedSessions_normal_distribution.png
+│   ├── eventCount_normal_distribution.png
+│   ├── process_capability_analysis.png
+│   ├── process_capacity.log
+│   ├── sessions_normal_distribution.png
+│   ├── totalUsers_normal_distribution.png
+│   └── userEngagementDuration_normal_distribution.png
+└── src
+    ├── anova.py
+    ├── common.py
+    ├── gage_rnr.py
+    ├── pareto.py
+    └── process_capacity.py
 ```
 
 ## Requirements
@@ -16,13 +41,17 @@ src/
 - pandas
 - numpy
 - python-dotenv
+- statsmodels
+- scipy
+- seaborn
+- matplotlib
 
 ## Setup
 
 1. Clone the repository:
 
 ```sh
-git clone https://github.com/yourusername/lean-six-sigma.git
+git clone https://github.com/yonrasgg/lean-six-sigma.git
 cd lean-six-sigma
 ```
 
@@ -47,91 +76,123 @@ Ensure you have set up your environment variables in the `.env` file as mentione
 
 ### Running the Main Application
 
-To run the main application, execute:
+To run the main application for process capability analysis, execute:
 
 ```sh
-python src/app.py
+python src/process_capacity.py
+```
+
+### Running the Gage R&R Analysis
+
+To perform Gage R&R analysis, execute:
+
+```sh
+python src/gage_rnr.py
+```
+
+### Running the Pareto Analysis
+
+To generate a Pareto chart, execute:
+
+```sh
+python src/pareto.py
+```
+
+### Running the ANOVA Analysis
+
+To perform ANOVA analysis, execute:
+
+```sh
+python src/anova.py
 ```
 
 ## Functionality
 
-### Process Capability Indices
+### Process Capability Indices (`process_capacity.py`)
 
-The application calculates various process capability indices to help in Lean Six Sigma analysis.
+The `process_capacity.py` script calculates various process capability indices (Cp, Cpk, Cpm) using data from GA4. It fetches data, validates it, calculates the indices, and generates visualizations.
 
-### Error Handling and Logging
+- **Cp (Process Capability Index)**: Measures the process capability based on the tolerance range and natural variability.
+- **Cpk (Process Capability Index considering Centering)**: Takes process centering into account.
+- **Cpm (Process Performance Index)**: Used for processes that should ideally center around a target value.
 
-Implements robust error handling and logging mechanisms to ensure smooth operation and easier debugging.
+The script generates a bar chart showing the Cp, Cpk, and Cpm values for each metric and normal distribution plots for each metric.
 
-### Metrics Processed
+### Gage R&R Analysis (`gage_rnr.py`)
 
-The application processes the following metrics:
+The `gage_rnr.py` script performs Gage Repeatability and Reproducibility (Gage R&R) analysis to measure the amount of variation in the measurement system arising from the measurement device and the people taking the measurement.
 
-- Total Users
-- Sessions
-- Engaged Sessions
-- Event Count
-- Screen Page Views
-- Bounce Rate
-- User Engagement Duration
-- Average Session Duration
+- **Operator Variance**: Variation between operators.
+- **Part Variance**: Variation between parts.
+- **Operator by Part Interaction Variance**: Interaction between operators and parts.
+- **Repeatability Variance**: Variation due to the measurement device.
 
-### GA4 Data Generation and Reporting Module (`src/gagernr.py`)
+The script generates variance and standard deviation charts and an HTML report summarizing the analysis.
 
-This module:
+### Pareto Analysis (`pareto.py`)
 
-- Provides custom report generation
-- Handles GA4 API interactions
-- Implements data transformation utilities
+The `pareto.py` script generates a Pareto chart to identify the most significant factors contributing to a problem. It fetches data from GA4, calculates impact scores, and generates a Pareto chart showing the impact scores and cumulative percentages.
 
-## Authentication
+- **Impact Scores**: Calculated based on the weights of different metrics.
+- **Cumulative Percentage**: Shows the cumulative impact of the factors.
 
-### Enable the Google Analytics Data API
+The script generates a Pareto chart and a CSV file with the analysis results.
 
-1. Go to the [Google Cloud Console](https://console.cloud.google.com/).
-2. Enable the Google Analytics Data API for your project.
+### ANOVA Analysis (`anova.py`)
 
-### Create a Service Account and Download Credentials
+The `anova.py` script performs ANOVA analysis to compare means across different groups and identify significant differences. It fetches data from GA4, performs assumption tests, one-way ANOVA, two-way ANOVA, and post-hoc analysis.
 
-1. In the Google Cloud Console, go to the "IAM & Admin" section.
-2. Create a new service account.
-3. Download the JSON credentials file and save it to a secure location.
+- **Assumption Tests**: Shapiro-Wilk test for normality and Levene's test for homogeneity of variance.
+- **One-way ANOVA**: To compare means across groups.
+- **Two-way ANOVA**: To analyze the interaction between two factors.
+- **Post-hoc Analysis**: Tukey's HSD test to identify which groups differ.
 
-### Set the `GOOGLE_APPLICATION_CREDENTIALS` Environment Variable
+The script generates boxplots for each dependent variable and saves the results in a text file.
 
-Set the path to your credentials file in the `.env` file:
+## Outputs
 
-```env
-GOOGLE_APPLICATION_CREDENTIALS=/path/to/your/credentials.json
-```
+### Process Capability Analysis
 
-### GA4 Property ID
+- **Chart**: `process_capacity_report/process_capability_analysis.png`
+- **Normal Distribution Plots**: `process_capacity_report/{metric}_normal_distribution.png`
+- **Data**: `process_capacity_report/analytics_data.csv`
+- **Log**: `process_capacity_report/process_capacity.log`
 
-To find your GA4 Property ID:
+### Gage R&R Analysis
 
-1. Go to GA4 Admin.
-2. Click on Property Settings.
-3. Look for "Property ID".
+- **Variance Chart**: `gage_rnr_report/gage_rnr_variance_chart.png`
+- **Standard Deviation Chart**: `gage_rnr_report/gage_rnr_std_dev_chart.png`
+- **HTML Report**: `gage_rnr_report/gage_rnr_report.html`
+
+### Pareto Analysis
+
+- **Chart**: `pareto_report/pareto_chart.png`
+- **Results**: `pareto_report/pareto_analysis_results.csv`
+
+### ANOVA Analysis
+
+- **Boxplots**: `anova_report/{metric}_boxplot.png`
+- **Results**: `anova_report/anova_results.txt`
+
+## Error Handling and Logging
+
+All scripts implement robust error handling and logging mechanisms to ensure smooth operation and easier debugging. Logs are saved in the respective output directories.
 
 ## Contributing
 
-1. Fork the repository.
-2. Create a feature branch (`git checkout -b feature-branch`).
-3. Commit your changes (`git commit -am 'Add new feature'`).
-4. Push to the branch (`git push origin feature-branch`).
-5. Create a Pull Request.
+Contributions are welcome! Please open an issue or submit a pull request for any improvements or bug fixes.
 
 ## License
 
-This project is licensed under the [GNU General Public License v3.0](https://github.com/yonrasgg/lean-six-sigma/blob/main/LICENSE).
+This project is licensed under the [GNU General Public License v3.0](https://github.com/yonrasgg/lean-six-sigma/blob/main/LICENSE)
 
-## Summary
-
-This README provides:
-1. Project overview
-2. File structure
-3. Setup instructions
-4. File descriptions
-5. Usage guidelines
-6. Authentication setup
-7. Contributing guidelines
+### Explanation:
+- **Directory Structure**: Provides an overview of the project structure.
+- **Requirements**: Lists the required Python packages.
+- **Setup**: Instructions for cloning the repository, setting up environment variables, and installing dependencies.
+- **Usage**: Instructions for running each script.
+- **Functionality**: Detailed descriptions of the functionalities provided by each script.
+- **Outputs**: Describes the output files generated by each script.
+- **Error Handling and Logging**: Mentions the error handling and logging mechanisms.
+- **Contributing**: Encourages contributions.
+- **License**: Specifies the project license.
