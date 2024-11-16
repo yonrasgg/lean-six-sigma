@@ -1,0 +1,18 @@
+2024-11-16 18:17:56,420 - common - INFO - Retrieved data with columns: ['eventName', 'totalUsers', 'sessions', 'engagedSessions', 'eventCount', 'screenPageViews', 'bounceRate', 'userEngagementDuration', 'averageSessionDuration']
+2024-11-16 18:17:56,421 - common - INFO - Data shape: (6, 9)
+2024-11-16 18:17:56,458 - common - INFO - Cleaned data:          eventName  totalUsers  sessions  engagedSessions  eventCount  screenPageViews  bounceRate  userEngagementDuration  averageSessionDuration
+0        page_view       168.0     281.0            118.0       938.0            938.0    0.580071                     0.0               73.624681
+1      first_visit       166.0     166.0             36.0       167.0              0.0    0.783133                     0.0                0.400753
+2    session_start       166.0     279.0            118.0       280.0              0.0    0.577061                     0.0                0.000000
+3           scroll       115.0     205.0            102.0       532.0              0.0    0.502439                  2181.0               22.727613
+4  user_engagement        34.0     104.0             98.0       634.0              0.0    0.057692                  6580.0              177.005648
+2024-11-16 18:17:56,460 - common - INFO - Data types after cleaning: userEngagementDuration    float64
+averageSessionDuration    float64
+bounceRate                float64
+eventCount                float64
+dtype: object
+2024-11-16 18:17:56,460 - common - INFO - Performing ANOVA for userEngagementDuration
+2024-11-16 18:17:56,699 - common - INFO - Performing ANOVA for averageSessionDuration
+2024-11-16 18:17:56,848 - common - INFO - Performing ANOVA for bounceRate
+2024-11-16 18:17:56,991 - common - INFO - Performing ANOVA for eventCount
+2024-11-16 18:17:57,134 - common - INFO - Analysis completed successfully

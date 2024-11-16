@@ -1,0 +1,26 @@
+ANOVA Results for bounceRate
+==================================================
+F-statistic: nan
+p-value: nan
+
+Tukey's HSD Test Results:
+      Multiple Comparison of Means - Tukey HSD, FWER=0.05      
+===============================================================
+    group1         group2     meandiff p-adj lower upper reject
+---------------------------------------------------------------
+        click     first_visit   0.7831   nan   nan   nan  False
+        click       page_view   0.5801   nan   nan   nan  False
+        click          scroll   0.5024   nan   nan   nan  False
+        click   session_start   0.5771   nan   nan   nan  False
+        click user_engagement   0.0577   nan   nan   nan  False
+  first_visit       page_view  -0.2031   nan   nan   nan  False
+  first_visit          scroll  -0.2807   nan   nan   nan  False
+  first_visit   session_start  -0.2061   nan   nan   nan  False
+  first_visit user_engagement  -0.7254   nan   nan   nan  False
+    page_view          scroll  -0.0776   nan   nan   nan  False
+    page_view   session_start   -0.003   nan   nan   nan  False
+    page_view user_engagement  -0.5224   nan   nan   nan  False
+       scroll   session_start   0.0746   nan   nan   nan  False
+       scroll user_engagement  -0.4447   nan   nan   nan  False
+session_start user_engagement  -0.5194   nan   nan   nan  False
+---------------------------------------------------------------

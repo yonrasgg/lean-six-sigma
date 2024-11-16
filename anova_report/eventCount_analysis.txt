@@ -1,0 +1,26 @@
+ANOVA Results for eventCount
+==================================================
+F-statistic: nan
+p-value: nan
+
+Tukey's HSD Test Results:
+      Multiple Comparison of Means - Tukey HSD, FWER=0.05      
+===============================================================
+    group1         group2     meandiff p-adj lower upper reject
+---------------------------------------------------------------
+        click     first_visit    137.0   nan   nan   nan  False
+        click       page_view    908.0   nan   nan   nan  False
+        click          scroll    502.0   nan   nan   nan  False
+        click   session_start    250.0   nan   nan   nan  False
+        click user_engagement    604.0   nan   nan   nan  False
+  first_visit       page_view    771.0   nan   nan   nan  False
+  first_visit          scroll    365.0   nan   nan   nan  False
+  first_visit   session_start    113.0   nan   nan   nan  False
+  first_visit user_engagement    467.0   nan   nan   nan  False
+    page_view          scroll   -406.0   nan   nan   nan  False
+    page_view   session_start   -658.0   nan   nan   nan  False
+    page_view user_engagement   -304.0   nan   nan   nan  False
+       scroll   session_start   -252.0   nan   nan   nan  False
+       scroll user_engagement    102.0   nan   nan   nan  False
+session_start user_engagement    354.0   nan   nan   nan  False
+---------------------------------------------------------------

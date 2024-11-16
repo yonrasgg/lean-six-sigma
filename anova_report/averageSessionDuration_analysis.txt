@@ -1,0 +1,26 @@
+ANOVA Results for averageSessionDuration
+==================================================
+F-statistic: nan
+p-value: nan
+
+Tukey's HSD Test Results:
+      Multiple Comparison of Means - Tukey HSD, FWER=0.05      
+===============================================================
+    group1         group2     meandiff p-adj lower upper reject
+---------------------------------------------------------------
+        click     first_visit -80.6725   nan   nan   nan  False
+        click       page_view  -7.4486   nan   nan   nan  False
+        click          scroll -58.3457   nan   nan   nan  False
+        click   session_start -81.0733   nan   nan   nan  False
+        click user_engagement  95.9324   nan   nan   nan  False
+  first_visit       page_view  73.2239   nan   nan   nan  False
+  first_visit          scroll  22.3269   nan   nan   nan  False
+  first_visit   session_start  -0.4008   nan   nan   nan  False
+  first_visit user_engagement 176.6049   nan   nan   nan  False
+    page_view          scroll -50.8971   nan   nan   nan  False
+    page_view   session_start -73.6247   nan   nan   nan  False
+    page_view user_engagement  103.381   nan   nan   nan  False
+       scroll   session_start -22.7276   nan   nan   nan  False
+       scroll user_engagement  154.278   nan   nan   nan  False
+session_start user_engagement 177.0056   nan   nan   nan  False
+---------------------------------------------------------------

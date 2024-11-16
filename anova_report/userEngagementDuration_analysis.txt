@@ -1,0 +1,26 @@
+ANOVA Results for userEngagementDuration
+==================================================
+F-statistic: nan
+p-value: nan
+
+Tukey's HSD Test Results:
+      Multiple Comparison of Means - Tukey HSD, FWER=0.05      
+===============================================================
+    group1         group2     meandiff p-adj lower upper reject
+---------------------------------------------------------------
+        click     first_visit  -1073.0   nan   nan   nan  False
+        click       page_view  -1073.0   nan   nan   nan  False
+        click          scroll   1108.0   nan   nan   nan  False
+        click   session_start  -1073.0   nan   nan   nan  False
+        click user_engagement   5507.0   nan   nan   nan  False
+  first_visit       page_view      0.0   nan   nan   nan  False
+  first_visit          scroll   2181.0   nan   nan   nan  False
+  first_visit   session_start      0.0   nan   nan   nan  False
+  first_visit user_engagement   6580.0   nan   nan   nan  False
+    page_view          scroll   2181.0   nan   nan   nan  False
+    page_view   session_start      0.0   nan   nan   nan  False
+    page_view user_engagement   6580.0   nan   nan   nan  False
+       scroll   session_start  -2181.0   nan   nan   nan  False
+       scroll user_engagement   4399.0   nan   nan   nan  False
+session_start user_engagement   6580.0   nan   nan   nan  False
+---------------------------------------------------------------
