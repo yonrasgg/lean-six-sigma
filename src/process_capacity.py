@@ -1,31 +1,14 @@
-import pandas as pd
-import numpy as np
-from typing import Optional, Dict, NamedTuple
-import matplotlib.pyplot as plt
-from pathlib import Path
-import logging
-from google.analytics.data_v1beta import BetaAnalyticsDataClient
-from google.analytics.data_v1beta.types import (
-    DateRange,
-    Dimension,
-    Metric,
-    RunReportRequest,
-)
 import os
-from dotenv import load_dotenv
+from common import (
+    pd, np, plt, Path, logging, BetaAnalyticsDataClient, DateRange, Dimension, Metric, RunReportRequest, load_dotenv, create_output_dir, setup_logging, AnalyticsDataProcessor
+)
+from typing import Optional, Dict, NamedTuple
 
 # Load environment variables and setup
 load_dotenv()
 
-OUTPUT_DIR = Path("process_capacity_report")
-OUTPUT_DIR.mkdir(exist_ok=True)
-
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    filename=OUTPUT_DIR / 'process_capacity.log'
-)
-logger = logging.getLogger(__name__)
+OUTPUT_DIR = create_output_dir("process_capacity_report")
+logger = setup_logging(OUTPUT_DIR, 'process_capacity.log')
 
 class MetricSpecification(NamedTuple):
     """Specification limits and target for a metric"""
@@ -44,7 +27,7 @@ class ProcessCapabilityMetrics(NamedTuple):
     usl: float
     lsl: float
 
-class AnalyticsDataProcessor:
+class ProcessCapacityAnalyzer:
     # Define specification limits for each metric
     METRIC_SPECIFICATIONS = {
         'totalUsers': MetricSpecification(
@@ -233,7 +216,7 @@ def plot_cp_values(capability_values: Dict[str, ProcessCapabilityMetrics], outpu
         logger.error("No capability values to plot")
         return
 
-    fig, ax = plt.subplots(figsize=(15, 8))
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(15, 12))
     
     # Prepare data for plotting
     metrics_data = {
@@ -242,58 +225,48 @@ def plot_cp_values(capability_values: Dict[str, ProcessCapabilityMetrics], outpu
     }
     metrics_df = pd.DataFrame.from_dict(metrics_data, orient='index')
     
-    # Plot Capability Indices
-    metrics_df.plot(kind='bar', ax=ax, width=0.8)
-    ax.set_title('Process Capability Indices by Metric', fontsize=14, pad=20)
-    ax.set_xlabel('Metrics', fontsize=12)
-    ax.set_ylabel('Capability Index Value', fontsize=12)
-    ax.axhline(y=1.33, color='g', linestyle='--', label='Target Capability (1.33)')
-    ax.legend(loc='upper right')
-    ax.grid(True, axis='y', linestyle='--', alpha=0.7)
-    plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
+    # Plot 1: Capability Indices
+    metrics_df.plot(kind='bar', ax=ax1, width=0.8)
+    ax1.set_title('Process Capability Indices by Metric', fontsize=12, pad=20)
+    ax1.set_xlabel('Metrics', fontsize=10)
+    ax1.set_ylabel('Capability Index Value', fontsize=10)
+    ax1.axhline(y=1.33, color='g', linestyle='--', label='Target Capability (1.33)')
+    ax1.legend(loc='upper right')
+    ax1.grid(True, axis='y', linestyle='--', alpha=0.7)
+    plt.setp(ax1.xaxis.get_majorticklabels(), rotation=45, ha='right')
     
-    # Add value labels
-    for p in ax.patches:
-        ax.annotate(f'{p.get_height():.2f}', 
-                    (p.get_x() + p.get_width() / 2., p.get_height()), 
-                    ha='center', va='center', xytext=(0, 10), 
-                    textcoords='offset points', fontsize=10, color='black')
-
+    # Plot 2: Pareto Chart
+    if 'Cp' in metrics_df.columns:
+        sorted_cp = metrics_df['Cp'].sort_values(ascending=False)
+        cumulative_percentage = (sorted_cp.cumsum() / sorted_cp.sum() * 100)
+        
+        bars = ax2.bar(range(len(sorted_cp)), sorted_cp, color='steelblue')
+        ax2.set_title('Pareto Chart of Process Capability', fontsize=12, pad=20)
+        ax2.set_xlabel('Metrics', fontsize=10)
+        ax2.set_ylabel('Cp Value', fontsize=10)
+        
+        ax2_twin = ax2.twinx()
+        ax2_twin.plot(range(len(sorted_cp)), cumulative_percentage, 
+                     color='red', marker='o', linewidth=2, label='Cumulative %')
+        ax2_twin.set_ylabel('Cumulative Percentage (%)', fontsize=10)
+        
+        # Add value labels
+        for idx, bar in enumerate(bars):
+            height = bar.get_height()
+            ax2.text(bar.get_x() + bar.get_width()/2., height,
+                    f'{height:.2f}', ha='center', va='bottom')
+        
+        for idx, value in enumerate(cumulative_percentage):
+            ax2_twin.text(idx, value, f'{value:.1f}%', ha='center', va='bottom')
+        
+        ax2.set_xticks(range(len(sorted_cp)))
+        ax2.set_xticklabels(sorted_cp.index, rotation=45, ha='right')
+        ax2.grid(True, axis='y', linestyle='--', alpha=0.7)
+    
     plt.tight_layout()
     plt.savefig(output_path / 'process_capability_analysis.png', 
                 bbox_inches='tight', dpi=300)
     plt.close()
-
-    # Plot normal distribution for each metric
-    for metric, values in capability_values.items():
-        fig, ax = plt.subplots(figsize=(10, 6))
-        mean = values.mean
-        std = values.std
-        usl = values.usl
-        lsl = values.lsl
-        target = values.target
-
-        # Generate data for normal distribution
-        x = np.linspace(mean - 4*std, mean + 4*std, 100)
-        y = (1 / (std * np.sqrt(2 * np.pi))) * np.exp(-0.5 * ((x - mean) / std) ** 2)
-
-        ax.plot(x, y, label='Normal Distribution', color='blue')
-        ax.axvline(mean, color='black', linestyle='--', label='Mean')
-        ax.axvline(usl, color='red', linestyle='--', label='USL')
-        ax.axvline(lsl, color='red', linestyle='--', label='LSL')
-        ax.axvline(target, color='green', linestyle='--', label='Target')
-
-        ax.fill_between(x, y, where=(x >= lsl) & (x <= usl), color='blue', alpha=0.1)
-        ax.set_title(f'Normal Distribution for {metric}', fontsize=14, pad=20)
-        ax.set_xlabel('Value', fontsize=12)
-        ax.set_ylabel('Probability Density', fontsize=12)
-        ax.legend(loc='upper right')
-        ax.grid(True, linestyle='--', alpha=0.7)
-
-        plt.tight_layout()
-        plt.savefig(output_path / f'{metric}_normal_distribution.png', 
-                    bbox_inches='tight', dpi=300)
-        plt.close()
 
 def main():
     try:
@@ -310,7 +283,8 @@ def main():
         logger.info(f"Retrieved data with columns: {df.columns.tolist()}")
         logger.info(f"Data shape: {df.shape}")
 
-        capability_values = processor.calculate_cp_values(df)
+        analyzer = ProcessCapacityAnalyzer()
+        capability_values = analyzer.calculate_cp_values(df)
         if not capability_values:
             raise ValueError("No valid capability values calculated")
 
