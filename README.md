@@ -8,7 +8,7 @@ This repository contains scripts for performing Lean Six Sigma analysis using da
 src/
 ├── LICENSE
 ├── README.md
-├── blogtndx-59d7dc876bd1.json
+├── GOOGLE_ANALYTICS_API.json
 ├── gage_rnr_report
 │   ├── gage_rnr_report.html
 │   ├── gage_rnr_std_dev_chart.png
