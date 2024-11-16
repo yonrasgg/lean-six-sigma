@@ -1,26 +1,93 @@
-ANOVA Results for bounceRate
-==================================================
-F-statistic: nan
-p-value: nan
 
-Tukey's HSD Test Results:
-      Multiple Comparison of Means - Tukey HSD, FWER=0.05      
-===============================================================
-    group1         group2     meandiff p-adj lower upper reject
----------------------------------------------------------------
-        click     first_visit   0.7831   nan   nan   nan  False
-        click       page_view   0.5801   nan   nan   nan  False
-        click          scroll   0.5024   nan   nan   nan  False
-        click   session_start   0.5771   nan   nan   nan  False
-        click user_engagement   0.0577   nan   nan   nan  False
-  first_visit       page_view  -0.2031   nan   nan   nan  False
-  first_visit          scroll  -0.2807   nan   nan   nan  False
-  first_visit   session_start  -0.2061   nan   nan   nan  False
-  first_visit user_engagement  -0.7254   nan   nan   nan  False
-    page_view          scroll  -0.0776   nan   nan   nan  False
-    page_view   session_start   -0.003   nan   nan   nan  False
-    page_view user_engagement  -0.5224   nan   nan   nan  False
-       scroll   session_start   0.0746   nan   nan   nan  False
-       scroll user_engagement  -0.4447   nan   nan   nan  False
-session_start user_engagement  -0.5194   nan   nan   nan  False
----------------------------------------------------------------
+Analysis for userEngagementDuration:
+==================================================
+
+Assumption Tests:
+{'normality_test': {'test': 'Shapiro-Wilk', 'p_value': np.float64(0.0001186635062296878)}, 'variance_test': {'test': 'Levene', 'p_value': np.float64(0.07232322228814023)}}
+
+One-way ANOVA:
+{'f_statistic': np.float64(6812945.166666667), 'p_value': np.float64(3.991865465896104e-32)}
+
+Two-way ANOVA:
+No two-way ANOVA results
+
+Post-hoc Analysis:
+           Multiple Comparison of Means - Tukey HSD, FWER=0.05           
+=========================================================================
+    group1         group2     meandiff p-adj   lower      upper    reject
+-------------------------------------------------------------------------
+  first_visit       page_view      0.0   1.0    -5.0985     5.0985  False
+  first_visit          scroll   2181.0   0.0  2175.9015  2186.0985   True
+  first_visit   session_start      0.0   1.0    -5.0985     5.0985  False
+  first_visit user_engagement   6580.0   0.0  6574.9015  6585.0985   True
+    page_view          scroll   2181.0   0.0  2175.9015  2186.0985   True
+    page_view   session_start      0.0   1.0    -5.0985     5.0985  False
+    page_view user_engagement   6580.0   0.0  6574.9015  6585.0985   True
+       scroll   session_start  -2181.0   0.0 -2186.0985 -2175.9015   True
+       scroll user_engagement   4399.0   0.0  4393.9015  4404.0985   True
+session_start user_engagement   6580.0   0.0  6574.9015  6585.0985   True
+-------------------------------------------------------------------------
+
+==================================================
+
+Analysis for averageSessionDuration:
+==================================================
+
+Assumption Tests:
+{'normality_test': {'test': 'Shapiro-Wilk', 'p_value': np.float64(0.0009054141976162195)}, 'variance_test': {'test': 'Levene', 'p_value': np.float64(0.35798885059814833)}}
+
+One-way ANOVA:
+{'f_statistic': np.float64(64265034.646272354), 'p_value': np.float64(5.3453662239748105e-37)}
+
+Two-way ANOVA:
+No two-way ANOVA results
+
+Post-hoc Analysis:
+         Multiple Comparison of Means - Tukey HSD, FWER=0.05         
+=====================================================================
+    group1         group2     meandiff p-adj  lower    upper   reject
+---------------------------------------------------------------------
+  first_visit       page_view    73.22   0.0  73.1767  73.2633   True
+  first_visit          scroll    22.32   0.0  22.2767  22.3633   True
+  first_visit   session_start     -0.4   0.0  -0.4433  -0.3567   True
+  first_visit user_engagement    176.6   0.0 176.5567 176.6433   True
+    page_view          scroll    -50.9   0.0 -50.9433 -50.8567   True
+    page_view   session_start   -73.62   0.0 -73.6633 -73.5767   True
+    page_view user_engagement   103.38   0.0 103.3367 103.4233   True
+       scroll   session_start   -22.72   0.0 -22.7633 -22.6767   True
+       scroll user_engagement   154.28   0.0 154.2367 154.3233   True
+session_start user_engagement    177.0   0.0 176.9567 177.0433   True
+---------------------------------------------------------------------
+
+==================================================
+
+Analysis for bounceRate:
+==================================================
+
+Assumption Tests:
+{'normality_test': {'test': 'Shapiro-Wilk', 'p_value': np.float64(0.0043594168881927456)}, 'variance_test': {'test': 'Levene', 'p_value': np.float64(1.0)}}
+
+One-way ANOVA:
+{'f_statistic': np.float64(2190.8999999995112), 'p_value': np.float64(1.153053347178079e-14)}
+
+Two-way ANOVA:
+No two-way ANOVA results
+
+Post-hoc Analysis:
+        Multiple Comparison of Means - Tukey HSD, FWER=0.05         
+====================================================================
+    group1         group2     meandiff p-adj   lower   upper  reject
+--------------------------------------------------------------------
+  first_visit       page_view     -0.2    0.0 -0.2269 -0.1731   True
+  first_visit          scroll    -0.28    0.0 -0.3069 -0.2531   True
+  first_visit   session_start    -0.21    0.0 -0.2369 -0.1831   True
+  first_visit user_engagement    -0.73    0.0 -0.7569 -0.7031   True
+    page_view          scroll    -0.08    0.0 -0.1069 -0.0531   True
+    page_view   session_start    -0.01 0.7385 -0.0369  0.0169  False
+    page_view user_engagement    -0.53    0.0 -0.5569 -0.5031   True
+       scroll   session_start     0.07    0.0  0.0431  0.0969   True
+       scroll user_engagement    -0.45    0.0 -0.4769 -0.4231   True
+session_start user_engagement    -0.52    0.0 -0.5469 -0.4931   True
+--------------------------------------------------------------------
+
+==================================================
