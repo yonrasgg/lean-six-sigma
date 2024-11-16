@@ -6,6 +6,7 @@ from common import (
 )
 from typing import Dict
 from datetime import datetime
+from scipy import stats
 
 # Load environment variables and setup
 load_dotenv()
@@ -15,77 +16,97 @@ logger = setup_logging(OUTPUT_DIR, 'anova.log')
 
 class GA4AnovaAnalyzer:
     def __init__(self, data: pd.DataFrame, output_dir: str):
-        self.data = data
         self.output_dir = output_dir
-        self.dependent_vars = ['userEngagementDuration', 'averageSessionDuration', 
-                             'bounceRate', 'eventCount']
+        self.dependent_vars = [
+            'userEngagementDuration',
+            'averageSessionDuration',
+            'bounceRate',
+            'eventCount'
+        ]
         
         # Create output directory if it doesn't exist
         os.makedirs(self.output_dir, exist_ok=True)
         
-    def save_plot(self, fig, filename: str):
-        """Save plot to output directory"""
-        plot_path = os.path.join(self.output_dir, filename)
-        fig.savefig(plot_path)
-        plt.close(fig)
+        # Clean and prepare the data upon initialization
+        self.data = self.clean_data(data)
+
+    def clean_data(self, data: pd.DataFrame) -> pd.DataFrame:
+        """Clean and convert data to appropriate types"""
+        # Create a copy to avoid modifying the original data
+        df = data.copy()
         
-    def save_results(self, results: Dict[str, Dict[str, any]], filename: str):
-        """Save results to text file"""
-        file_path = os.path.join(self.output_dir, filename)
-        with open(file_path, 'w') as f:
-            for metric, analysis in results.items():
-                f.write(f"\nAnalysis for {metric}:\n")
-                f.write("=" * 50 + "\n")
-                f.write("\nAssumption Tests:\n")
-                f.write(str(analysis['assumptions']) + "\n")
-                f.write("\nOne-way ANOVA:\n")
-                f.write(str(analysis['one_way_anova']) + "\n")
-                f.write("\nTwo-way ANOVA:\n")
-                f.write(str(analysis['two_way_anova']) + "\n")
-                f.write("\nPost-hoc Analysis:\n")
-                f.write(str(analysis['post_hoc']) + "\n")
-                f.write("\n" + "=" * 50 + "\n")
+        # Convert eventName to category
+        df['eventName'] = df['eventName'].astype('category')
+        
+        # Convert numeric columns
+        for var in self.dependent_vars:
+            df[var] = pd.to_numeric(df[var], errors='coerce')
+        
+        # Drop any rows with NaN values
+        df = df.dropna(subset=self.dependent_vars)
+        
+        logger.info(f"Cleaned data: {df.head()}")
+        logger.info(f"Data types after cleaning: {df[self.dependent_vars].dtypes}")
+        
+        return df
 
     def perform_anova(self):
+        """Perform ANOVA analysis and generate visualizations"""
         results = {}
+        
         for var in self.dependent_vars:
             try:
-                # Assumption tests
-                shapiro_test = shapiro(self.data[var])
-                levene_test = levene(self.data[var], self.data['eventName'])
+                logger.info(f"Performing ANOVA for {var}")
                 
-                # One-way ANOVA
-                model = ols(f'{var} ~ C(eventName)', data=self.data).fit()
-                anova_table = sm.stats.anova_lm(model, typ=2)
+                # Create figure for visualization
+                plt.figure(figsize=(12, 6))
                 
-                # Two-way ANOVA
-                model_two_way = ols(f'{var} ~ C(eventName) + C(eventName):C(eventName)', data=self.data).fit()
-                anova_table_two_way = sm.stats.anova_lm(model_two_way, typ=2)
+                # Create boxplot
+                plt.title(f'Distribution of {var} by Event')
+                plt.xticks(rotation=45)
+                plt.tight_layout()
                 
-                # Post-hoc analysis
-                post_hoc = pairwise_tukeyhsd(self.data[var], self.data['eventName'])
+                # Save the plot
+                plot_path = os.path.join(self.output_dir, f'{var}_boxplot.png')
+                plt.savefig(plot_path)
+                plt.close()
                 
+                # Perform one-way ANOVA
+                groups = [group[var].values for name, group in self.data.groupby('eventName')]
+                f_stat, p_val = stats.f_oneway(*groups)
+                
+                # Perform Tukey's HSD test
+                tukey = pairwise_tukeyhsd(endog=self.data[var],
+                                        groups=self.data['eventName'],
+                                        alpha=0.05)
+                
+                # Store results
                 results[var] = {
                     'assumptions': {
-                        'Shapiro-Wilk Test': shapiro_test,
-                        'Levene Test': levene_test
+                        'Shapiro-Wilk Test': shapiro(self.data[var]),
+                        'Levene Test': levene(*groups)
                     },
-                    'one_way_anova': anova_table,
-                    'two_way_anova': anova_table_two_way,
-                    'post_hoc': post_hoc
+                    'one_way_anova': {
+                        'f_statistic': f_stat,
+                        'p_value': p_val
+                    },
+                    'post_hoc': tukey
                 }
                 
-                # Plotting
-                fig, ax = plt.subplots(figsize=(10, 6))
-                sns.boxplot(x='eventName', y=var, data=self.data, ax=ax)
-                ax.set_title(f'Boxplot of {var} by Event Name')
-                self.save_plot(fig, f'{var}_boxplot.png')
+                # Save detailed results
+                with open(os.path.join(self.output_dir, f'{var}_analysis.txt'), 'w') as f:
+                    f.write(f"ANOVA Results for {var}\n")
+                    f.write("=" * 50 + "\n")
+                    f.write(f"F-statistic: {f_stat}\n")
+                    f.write(f"p-value: {p_val}\n")
+                    f.write("\nTukey's HSD Test Results:\n")
+                    f.write(str(tukey))
                 
             except Exception as e:
-                logger.error(f"Error performing ANOVA for {var}: {str(e)}")
+                logger.error(f"Error analyzing {var}: {str(e)}")
+                continue
         
-        self.save_results(results, 'anova_results.txt')
-        logger.info("ANOVA analysis completed successfully")
+        return results
 
 def main():
     try:
@@ -93,21 +114,37 @@ def main():
         if not property_id:
             raise ValueError("GA4_PROPERTY_ID environment variable not set")
 
+        # Initialize data processor and get data
         processor = AnalyticsDataProcessor()
-        
         df = processor.get_analytics_data(property_id)
+        
         if df is None or df.empty:
             raise ValueError("Failed to fetch analytics data")
 
         logger.info(f"Retrieved data with columns: {df.columns.tolist()}")
         logger.info(f"Data shape: {df.shape}")
 
+        # Save raw data
+        df.to_csv(os.path.join(OUTPUT_DIR, 'raw_data.csv'), index=False)
+
+        # Initialize analyzer and perform analysis
         analyzer = GA4AnovaAnalyzer(df, OUTPUT_DIR)
-        analyzer.perform_anova()
-        logger.info("ANOVA report generated successfully")
+        results = analyzer.perform_anova()
+
+        # Save summary results
+        with open(os.path.join(OUTPUT_DIR, 'summary_results.txt'), 'w') as f:
+            for var, result in results.items():
+                f.write(f"\nResults for {var}:\n")
+                f.write("=" * 50 + "\n")
+                f.write(f"ANOVA p-value: {result['one_way_anova']['p_value']}\n")
+                f.write("=" * 50 + "\n\n")
+
+        logger.info("Analysis completed successfully")
 
     except Exception as e:
         logger.error(f"Error in main execution: {str(e)}")
+        raise
 
 if __name__ == "__main__":
     main()
+
