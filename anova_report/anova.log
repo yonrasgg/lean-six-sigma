@@ -1,18 +1,72 @@
-2024-11-16 18:17:56,420 - common - INFO - Retrieved data with columns: ['eventName', 'totalUsers', 'sessions', 'engagedSessions', 'eventCount', 'screenPageViews', 'bounceRate', 'userEngagementDuration', 'averageSessionDuration']
-2024-11-16 18:17:56,421 - common - INFO - Data shape: (6, 9)
-2024-11-16 18:17:56,458 - common - INFO - Cleaned data:          eventName  totalUsers  sessions  engagedSessions  eventCount  screenPageViews  bounceRate  userEngagementDuration  averageSessionDuration
-0        page_view       168.0     281.0            118.0       938.0            938.0    0.580071                     0.0               73.624681
-1      first_visit       166.0     166.0             36.0       167.0              0.0    0.783133                     0.0                0.400753
-2    session_start       166.0     279.0            118.0       280.0              0.0    0.577061                     0.0                0.000000
-3           scroll       115.0     205.0            102.0       532.0              0.0    0.502439                  2181.0               22.727613
-4  user_engagement        34.0     104.0             98.0       634.0              0.0    0.057692                  6580.0              177.005648
-2024-11-16 18:17:56,460 - common - INFO - Data types after cleaning: userEngagementDuration    float64
+2024-11-16 20:29:26,700 - common - INFO - Fetching analytics data for property ID: 463673955
+2024-11-16 20:29:26,700 - common - INFO - Date range: 2024-01-01 to 2024-01-31
+2024-11-16 20:29:26,700 - common - INFO - Initializing analytics data fetch for property: 463673955
+2024-11-16 20:29:26,700 - common - INFO - Date range: 2024-01-01 to 2024-01-31
+2024-11-16 20:29:26,701 - common - INFO - Successfully created sample dataset with multiple observations per group
+2024-11-16 20:29:26,701 - common - INFO - Retrieved data with columns: ['eventName', 'totalUsers', 'sessions', 'engagedSessions', 'eventCount', 'screenPageViews', 'bounceRate', 'userEngagementDuration', 'averageSessionDuration']
+2024-11-16 20:29:26,701 - common - INFO - Data shape: (15, 9)
+2024-11-16 20:29:26,703 - common - INFO - Saved raw data to: anova_report/raw_data.csv
+2024-11-16 20:29:26,716 - common - INFO - Cleaned data:      eventName  totalUsers  sessions  engagedSessions  eventCount  screenPageViews  bounceRate  userEngagementDuration  averageSessionDuration
+0    page_view         168       281              118         938              938        0.58                       0                   73.62
+1    page_view         165       278              115         935              935        0.57                       0                   73.60
+2    page_view         170       284              121         941              941        0.59                       0                   73.64
+3  first_visit         166       166               36         167                0        0.78                       0                    0.40
+4  first_visit         164       164               34         165                0        0.77                       0                    0.39
+2024-11-16 20:29:26,717 - common - INFO - Data types after cleaning: userEngagementDuration      int64
 averageSessionDuration    float64
 bounceRate                float64
-eventCount                float64
+eventCount                  int64
 dtype: object
-2024-11-16 18:17:56,460 - common - INFO - Performing ANOVA for userEngagementDuration
-2024-11-16 18:17:56,699 - common - INFO - Performing ANOVA for averageSessionDuration
-2024-11-16 18:17:56,848 - common - INFO - Performing ANOVA for bounceRate
-2024-11-16 18:17:56,991 - common - INFO - Performing ANOVA for eventCount
-2024-11-16 18:17:57,134 - common - INFO - Analysis completed successfully
+2024-11-16 20:29:26,717 - common - INFO - 
+Analyzing userEngagementDuration
+2024-11-16 20:29:26,728 - common - INFO - Cleaned data:      eventName  totalUsers  sessions  engagedSessions  eventCount  screenPageViews  bounceRate  userEngagementDuration  averageSessionDuration
+0    page_view         168       281              118         938              938        0.58                       0                   73.62
+1    page_view         165       278              115         935              935        0.57                       0                   73.60
+2    page_view         170       284              121         941              941        0.59                       0                   73.64
+3  first_visit         166       166               36         167                0        0.78                       0                    0.40
+4  first_visit         164       164               34         165                0        0.77                       0                    0.39
+2024-11-16 20:29:26,729 - common - INFO - Data types after cleaning: userEngagementDuration      int64
+averageSessionDuration    float64
+bounceRate                float64
+eventCount                  int64
+dtype: object
+2024-11-16 20:29:27,061 - common - INFO - 
+Analyzing averageSessionDuration
+2024-11-16 20:29:27,077 - common - INFO - Cleaned data:      eventName  totalUsers  sessions  engagedSessions  eventCount  screenPageViews  bounceRate  userEngagementDuration  averageSessionDuration
+0    page_view         168       281              118         938              938        0.58                       0                   73.62
+1    page_view         165       278              115         935              935        0.57                       0                   73.60
+2    page_view         170       284              121         941              941        0.59                       0                   73.64
+3  first_visit         166       166               36         167                0        0.78                       0                    0.40
+4  first_visit         164       164               34         165                0        0.77                       0                    0.39
+2024-11-16 20:29:27,078 - common - INFO - Data types after cleaning: userEngagementDuration      int64
+averageSessionDuration    float64
+bounceRate                float64
+eventCount                  int64
+dtype: object
+2024-11-16 20:29:27,434 - common - INFO - 
+Analyzing bounceRate
+2024-11-16 20:29:27,447 - common - INFO - Cleaned data:      eventName  totalUsers  sessions  engagedSessions  eventCount  screenPageViews  bounceRate  userEngagementDuration  averageSessionDuration
+0    page_view         168       281              118         938              938        0.58                       0                   73.62
+1    page_view         165       278              115         935              935        0.57                       0                   73.60
+2    page_view         170       284              121         941              941        0.59                       0                   73.64
+3  first_visit         166       166               36         167                0        0.78                       0                    0.40
+4  first_visit         164       164               34         165                0        0.77                       0                    0.39
+2024-11-16 20:29:27,448 - common - INFO - Data types after cleaning: userEngagementDuration      int64
+averageSessionDuration    float64
+bounceRate                float64
+eventCount                  int64
+dtype: object
+2024-11-16 20:29:27,828 - common - INFO - 
+Analyzing eventCount
+2024-11-16 20:29:27,840 - common - INFO - Cleaned data:      eventName  totalUsers  sessions  engagedSessions  eventCount  screenPageViews  bounceRate  userEngagementDuration  averageSessionDuration
+0    page_view         168       281              118         938              938        0.58                       0                   73.62
+1    page_view         165       278              115         935              935        0.57                       0                   73.60
+2    page_view         170       284              121         941              941        0.59                       0                   73.64
+3  first_visit         166       166               36         167                0        0.78                       0                    0.40
+4  first_visit         164       164               34         165                0        0.77                       0                    0.39
+2024-11-16 20:29:27,841 - common - INFO - Data types after cleaning: userEngagementDuration      int64
+averageSessionDuration    float64
+bounceRate                float64
+eventCount                  int64
+dtype: object
+2024-11-16 20:29:28,237 - common - INFO - ANOVA report generated successfully

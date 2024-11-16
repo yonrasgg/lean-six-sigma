@@ -1,26 +1,31 @@
-ANOVA Results for userEngagementDuration
-==================================================
-F-statistic: nan
-p-value: nan
 
-Tukey's HSD Test Results:
-      Multiple Comparison of Means - Tukey HSD, FWER=0.05      
-===============================================================
-    group1         group2     meandiff p-adj lower upper reject
----------------------------------------------------------------
-        click     first_visit  -1073.0   nan   nan   nan  False
-        click       page_view  -1073.0   nan   nan   nan  False
-        click          scroll   1108.0   nan   nan   nan  False
-        click   session_start  -1073.0   nan   nan   nan  False
-        click user_engagement   5507.0   nan   nan   nan  False
-  first_visit       page_view      0.0   nan   nan   nan  False
-  first_visit          scroll   2181.0   nan   nan   nan  False
-  first_visit   session_start      0.0   nan   nan   nan  False
-  first_visit user_engagement   6580.0   nan   nan   nan  False
-    page_view          scroll   2181.0   nan   nan   nan  False
-    page_view   session_start      0.0   nan   nan   nan  False
-    page_view user_engagement   6580.0   nan   nan   nan  False
-       scroll   session_start  -2181.0   nan   nan   nan  False
-       scroll user_engagement   4399.0   nan   nan   nan  False
-session_start user_engagement   6580.0   nan   nan   nan  False
----------------------------------------------------------------
+Analysis for userEngagementDuration:
+==================================================
+
+Assumption Tests:
+{'normality_test': {'test': 'Shapiro-Wilk', 'p_value': np.float64(0.0001186635062296878)}, 'variance_test': {'test': 'Levene', 'p_value': np.float64(0.07232322228814023)}}
+
+One-way ANOVA:
+{'f_statistic': np.float64(6812945.166666667), 'p_value': np.float64(3.991865465896104e-32)}
+
+Two-way ANOVA:
+No two-way ANOVA results
+
+Post-hoc Analysis:
+           Multiple Comparison of Means - Tukey HSD, FWER=0.05           
+=========================================================================
+    group1         group2     meandiff p-adj   lower      upper    reject
+-------------------------------------------------------------------------
+  first_visit       page_view      0.0   1.0    -5.0985     5.0985  False
+  first_visit          scroll   2181.0   0.0  2175.9015  2186.0985   True
+  first_visit   session_start      0.0   1.0    -5.0985     5.0985  False
+  first_visit user_engagement   6580.0   0.0  6574.9015  6585.0985   True
+    page_view          scroll   2181.0   0.0  2175.9015  2186.0985   True
+    page_view   session_start      0.0   1.0    -5.0985     5.0985  False
+    page_view user_engagement   6580.0   0.0  6574.9015  6585.0985   True
+       scroll   session_start  -2181.0   0.0 -2186.0985 -2175.9015   True
+       scroll user_engagement   4399.0   0.0  4393.9015  4404.0985   True
+session_start user_engagement   6580.0   0.0  6574.9015  6585.0985   True
+-------------------------------------------------------------------------
+
+==================================================

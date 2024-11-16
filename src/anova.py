@@ -42,109 +42,167 @@ class GA4AnovaAnalyzer:
         for var in self.dependent_vars:
             df[var] = pd.to_numeric(df[var], errors='coerce')
         
-        # Drop any rows with NaN values
+        # Drop any rows with NaN values in the dependent variables
         df = df.dropna(subset=self.dependent_vars)
+        
+        # Ensure there are enough samples for each group
+        for var in self.dependent_vars:
+            group_counts = df['eventName'].value_counts()
+            if any(group_counts < 2):
+                logger.warning(f"Not enough samples for {var}. Groups with less than 2 samples will be excluded.")
+                df = df[df['eventName'].isin(group_counts[group_counts >= 2].index)]
         
         logger.info(f"Cleaned data: {df.head()}")
         logger.info(f"Data types after cleaning: {df[self.dependent_vars].dtypes}")
-        
         return df
 
-    def perform_anova(self):
-        """Perform ANOVA analysis and generate visualizations"""
+    def save_plot(self, fig, filename: str):
+        """Save plot to output directory"""
+        plot_path = os.path.join(self.output_dir, filename)
+        fig.savefig(plot_path)
+        plt.close(fig)
+        
+    def save_results(self, results: Dict[str, Dict[str, any]], filename: str):
+        """Save results to text file"""
+        file_path = os.path.join(self.output_dir, filename)
+        with open(file_path, 'w') as f:
+            for metric, analysis in results.items():
+                f.write(f"\nAnalysis for {metric}:\n")
+                f.write("=" * 50 + "\n")
+                f.write("\nAssumption Tests:\n")
+                f.write(str(analysis.get('assumptions', 'No assumptions test results')) + "\n")
+                f.write("\nOne-way ANOVA:\n")
+                f.write(str(analysis.get('one_way_anova', 'No one-way ANOVA results')) + "\n")
+                f.write("\nTwo-way ANOVA:\n")
+                f.write(str(analysis.get('two_way_anova', 'No two-way ANOVA results')) + "\n")
+                f.write("\nPost-hoc Analysis:\n")
+                f.write(str(analysis.get('post_hoc', 'No post-hoc analysis results')) + "\n")
+                f.write("\n" + "=" * 50 + "\n")
+
+    def perform_statistical_tests(self, df: pd.DataFrame, var: str) -> Dict:
+        """Perform statistical tests on the data."""
+        results = {
+            'descriptive': df.groupby('eventName')[var].describe(),
+            'group_sizes': df.groupby('eventName')[var].size(),
+            'total_samples': len(df),
+            'anova_possible': False
+        }
+        
+        try:
+            # Create groups for ANOVA
+            groups = [group[var].values for name, group in df.groupby('eventName')]
+            groups = [group for group in groups if len(group) >= 2]  # Only keep groups with sufficient samples
+            
+            if len(groups) >= 2:
+                # Perform normality test
+                _, norm_p_value = shapiro(df[var])
+                results['assumptions'] = {
+                    'normality_test': {
+                        'test': 'Shapiro-Wilk',
+                        'p_value': norm_p_value
+                    }
+                }
+                
+                # Perform homogeneity of variance test
+                _, hov_p_value = levene(*groups)
+                results['assumptions']['variance_test'] = {
+                    'test': 'Levene',
+                    'p_value': hov_p_value
+                }
+                
+                # Perform one-way ANOVA
+                f_stat, p_val = stats.f_oneway(*groups)
+                results['one_way_anova'] = {
+                    'f_statistic': f_stat,
+                    'p_value': p_val
+                }
+                results['anova_possible'] = True
+                
+                # Perform Tukey's HSD if ANOVA is significant
+                if p_val < 0.05:
+                    tukey = pairwise_tukeyhsd(df[var], df['eventName'])
+                    results['post_hoc'] = tukey
+                
+        except Exception as e:
+            logger.error(f"Error performing statistical tests for {var}: {str(e)}")
+        
+        return results
+
+    def perform_analysis(self):
+        """Perform complete analysis for all variables."""
         results = {}
         
         for var in self.dependent_vars:
             try:
-                logger.info(f"Performing ANOVA for {var}")
+                logger.info(f"\nAnalyzing {var}")
                 
-                # Create figure for visualization
-                plt.figure(figsize=(12, 6))
+                # Clean data for this specific variable
+                clean_df = self.clean_data(self.data)
                 
-                # Create boxplot
-                plt.title(f'Distribution of {var} by Event')
-                plt.xticks(rotation=45)
-                plt.tight_layout()
+                if clean_df.empty:
+                    logger.warning(f"No valid data for analysis of {var}")
+                    continue
                 
-                # Save the plot
-                plot_path = os.path.join(self.output_dir, f'{var}_boxplot.png')
-                plt.savefig(plot_path)
-                plt.close()
+                # Perform statistical tests
+                analysis_results = self.perform_statistical_tests(clean_df, var)
+                results[var] = analysis_results
                 
-                # Perform one-way ANOVA
-                groups = [group[var].values for name, group in self.data.groupby('eventName')]
-                f_stat, p_val = stats.f_oneway(*groups)
+                # Create visualization
+                fig, ax = plt.subplots(figsize=(10, 6))
+                sns.boxplot(x='eventName', y=var, data=clean_df, ax=ax)
+                ax.set_title(f'Boxplot of {var} by Event Name')
+                ax.grid(True)  # Add grid to the plot
+                self.save_plot(fig, f'{var}_boxplot.png')
                 
-                # Perform Tukey's HSD test
-                tukey = pairwise_tukeyhsd(endog=self.data[var],
-                                        groups=self.data['eventName'],
-                                        alpha=0.05)
-                
-                # Store results
-                results[var] = {
-                    'assumptions': {
-                        'Shapiro-Wilk Test': shapiro(self.data[var]),
-                        'Levene Test': levene(*groups)
-                    },
-                    'one_way_anova': {
-                        'f_statistic': f_stat,
-                        'p_value': p_val
-                    },
-                    'post_hoc': tukey
-                }
-                
-                # Save detailed results
-                with open(os.path.join(self.output_dir, f'{var}_analysis.txt'), 'w') as f:
-                    f.write(f"ANOVA Results for {var}\n")
-                    f.write("=" * 50 + "\n")
-                    f.write(f"F-statistic: {f_stat}\n")
-                    f.write(f"p-value: {p_val}\n")
-                    f.write("\nTukey's HSD Test Results:\n")
-                    f.write(str(tukey))
+                # Save analysis results
+                self.save_results(results, f'{var}_analysis.txt')
                 
             except Exception as e:
-                logger.error(f"Error analyzing {var}: {str(e)}")
-                continue
+                logger.error(f"Error performing analysis for {var}: {str(e)}")
         
         return results
 
 def main():
     try:
+        # Get configuration from environment variables
         property_id = os.getenv('GA4_PROPERTY_ID')
         if not property_id:
             raise ValueError("GA4_PROPERTY_ID environment variable not set")
 
+        # Get dates from environment variables or use defaults
+        end_date = os.getenv('GA4_END_DATE', datetime.now().strftime('%Y-%m-%d'))
+        start_date = os.getenv('GA4_START_DATE', 
+                              (datetime.strptime(end_date, '%Y-%m-%d') - pd.Timedelta(days=30)).strftime('%Y-%m-%d'))
+
+        logger.info(f"Fetching analytics data for property ID: {property_id}")
+        logger.info(f"Date range: {start_date} to {end_date}")
+
         # Initialize data processor and get data
         processor = AnalyticsDataProcessor()
-        df = processor.get_analytics_data(property_id)
+        df = processor.get_analytics_data(
+            property_id=property_id,
+            start_date=start_date,
+            end_date=end_date
+        )
         
-        if df is None or df.empty:
-            raise ValueError("Failed to fetch analytics data")
+        if df.empty:
+            raise ValueError("No data retrieved from Google Analytics")
 
         logger.info(f"Retrieved data with columns: {df.columns.tolist()}")
         logger.info(f"Data shape: {df.shape}")
 
-        # Save raw data
-        df.to_csv(os.path.join(OUTPUT_DIR, 'raw_data.csv'), index=False)
+        # Save the raw data to a CSV file
+        raw_data_path = os.path.join(OUTPUT_DIR, 'raw_data.csv')
+        df.to_csv(raw_data_path, index=False)
+        logger.info(f"Saved raw data to: {raw_data_path}")
 
-        # Initialize analyzer and perform analysis
+        # Perform ANOVA analysis
         analyzer = GA4AnovaAnalyzer(df, OUTPUT_DIR)
-        results = analyzer.perform_anova()
-
-        # Save summary results
-        with open(os.path.join(OUTPUT_DIR, 'summary_results.txt'), 'w') as f:
-            for var, result in results.items():
-                f.write(f"\nResults for {var}:\n")
-                f.write("=" * 50 + "\n")
-                f.write(f"ANOVA p-value: {result['one_way_anova']['p_value']}\n")
-                f.write("=" * 50 + "\n\n")
-
-        logger.info("Analysis completed successfully")
+        results = analyzer.perform_analysis()
+        logger.info("ANOVA report generated successfully")
 
     except Exception as e:
         logger.error(f"Error in main execution: {str(e)}")
-        raise
 
 if __name__ == "__main__":
     main()
-
