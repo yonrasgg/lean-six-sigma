@@ -10,7 +10,6 @@ from typing import Dict, Any
 from google.analytics.data_v1beta import BetaAnalyticsDataClient, RunReportRequest, Dimension, Metric, DateRange
 from dotenv import load_dotenv
 
-# Load environment variables and setup
 load_dotenv()
 
 def validate_date(date_str: str) -> bool:
