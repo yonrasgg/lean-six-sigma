@@ -1,0 +1,40 @@
+Debug - Start Date: 2024-01-01
+Debug - End Date: 2024-11-25
+
+GA4 Response Details:
+Date Range: 2024-01-01 to 2024-11-25
+Property ID: GA4_PROPERTY_ID
+Currency Code: USD
+Time Zone: America/Costa_Rica
+Dimensions: [name: "eventName"
+, name: "country"
+]
+Metrics: [name: "eventCount"
+type_: TYPE_INTEGER
+, name: "totalUsers"
+type_: TYPE_INTEGER
+, name: "sessions"
+type_: TYPE_INTEGER
+, name: "screenPageViews"
+type_: TYPE_INTEGER
+]
+Row Count: 102
+
+Data Summary:
+Total observations: 102
+Groups in eventName: 6
+Metric statistics for eventCount:
+count    102.000000
+mean      25.303922
+std      103.099278
+min        1.000000
+25%        1.000000
+50%        4.000000
+75%       12.000000
+max      766.000000
+
+Test Results:
+h_statistic: 3.4053447264086962
+p_value: 0.6377560372313364
+reject_null: False
+conclusion: Fail to reject the null hypothesis. There is no significant difference in eventCount between groups.
