@@ -3,7 +3,7 @@ Debug - End Date: 2024-11-25
 
 GA4 Response Details:
 Date Range: 2024-01-01 to 2024-11-25
-Property ID: 
+Property ID: GA4_PROPERTY_ID
 Currency Code: USD
 Time Zone: America/Costa_Rica
 Dimensions: [name: "eventName"

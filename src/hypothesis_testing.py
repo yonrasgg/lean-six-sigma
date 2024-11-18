@@ -90,7 +90,7 @@ def fetch_data_from_google_analytics() -> pd.DataFrame:
         # Log response details
         print("\nGA4 Response Details:")
         print(f"Date Range: {start_date} to {end_date}")
-        print(f"Property ID: {property_id}")
+        print(f"Property ID: GA4_PROPERTY_ID")
         print(f"Currency Code: {response.metadata.currency_code}")
         print(f"Time Zone: {response.metadata.time_zone}")
         print(f"Dimensions: {[d.name for d in response.dimension_headers]}")
@@ -121,7 +121,7 @@ def fetch_data_from_google_analytics() -> pd.DataFrame:
             except Exception as e:
                 print(f"Error processing row: {str(e)}")
         
-        return pd.DataFrame(rows), start_date, end_date, property_id, response
+        return pd.DataFrame(rows), start_date, end_date, "GA4_PROPERTY_ID", response
     
     except Exception as e:
         print(f"Error fetching data from GA4: {str(e)}")
@@ -205,7 +205,7 @@ def perform_hypothesis_test(data: pd.DataFrame,
             f.write(f"Debug - End Date: {end_date}\n\n")
             f.write("GA4 Response Details:\n")
             f.write(f"Date Range: {start_date} to {end_date}\n")
-            f.write(f"Property ID: {property_id}\n")
+            f.write(f"Property ID: GA4_PROPERTY_ID\n")
             f.write(f"Currency Code: {response.metadata.currency_code}\n")
             f.write(f"Time Zone: {response.metadata.time_zone}\n")
             f.write(f"Dimensions: {response.dimension_headers}\n")
