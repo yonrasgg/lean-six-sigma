@@ -1,0 +1,2 @@
+h_statistic,p_value,reject_null,conclusion
+3.4053447264086962,0.6377560372313364,False,Fail to reject the null hypothesis. There is no significant difference in eventCount between groups.
