@@ -3,7 +3,7 @@ import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.stats import f_oneway, kruskal, ttest_1samp, ttest_ind, norm
+from scipy.stats import f_oneway, kruskal, ttest_1samp, ttest_ind, norm, shapiro, levene
 from statsmodels.stats.multicomp import pairwise_tukeyhsd
 import seaborn as sns
 from typing import Dict, Any
@@ -73,7 +73,7 @@ def fetch_data_from_google_analytics() -> pd.DataFrame:
     # Prepare request
     request = RunReportRequest(
         property=f"properties/{property_id}",
-        dimensions=[Dimension(name="eventName")],
+        dimensions=[Dimension(name="eventName"), Dimension(name="country")],
         metrics=[
             Metric(name="eventCount"),
             Metric(name="totalUsers"),
@@ -112,6 +112,7 @@ def fetch_data_from_google_analytics() -> pd.DataFrame:
             try:
                 rows.append({
                     "eventName": row.dimension_values[0].value,
+                    "country": row.dimension_values[1].value,
                     "eventCount": int(row.metric_values[0].value),
                     "totalUsers": int(row.metric_values[1].value),
                     "sessions": int(row.metric_values[2].value),
@@ -120,24 +121,32 @@ def fetch_data_from_google_analytics() -> pd.DataFrame:
             except Exception as e:
                 print(f"Error processing row: {str(e)}")
         
-        return pd.DataFrame(rows)
+        return pd.DataFrame(rows), start_date, end_date, property_id, response
     
     except Exception as e:
         print(f"Error fetching data from GA4: {str(e)}")
-        return pd.DataFrame()
+        return pd.DataFrame(), None, None, None, None
 
 def perform_hypothesis_test(data: pd.DataFrame, 
                             metric: str, 
-                            group_col: str = 'eventName', 
-                            alpha: float = 0.05) -> Dict[str, Any]:
+                            group_col: str, 
+                            alpha: float, 
+                            start_date: str, 
+                            end_date: str, 
+                            property_id: str, 
+                            response: Any) -> Dict[str, Any]:
     """
     Perform hypothesis testing for a given metric grouped by a column.
     
     Args:
         data (pd.DataFrame): DataFrame containing the data.
         metric (str): The metric to test (e.g., 'eventCount').
-        group_col (str): The column to group by (default is 'eventName').
-        alpha (float): Significance level (default is 0.05).
+        group_col (str): The column to group by.
+        alpha (float): Significance level.
+        start_date (str): Start date of the data.
+        end_date (str): End date of the data.
+        property_id (str): GA4 property ID.
+        response (Any): GA4 API response object.
     
     Returns:
         Dict[str, Any]: Dictionary containing test results and plots.
@@ -145,8 +154,6 @@ def perform_hypothesis_test(data: pd.DataFrame,
     Raises:
         ValueError: If input data is invalid or missing required columns.
     """
-    results: Dict[str, Any] = {}
-    
     # Input validation
     if data.empty:
         raise ValueError('No data available for analysis')
@@ -162,7 +169,7 @@ def perform_hypothesis_test(data: pd.DataFrame,
     output_dir = 'hypothesis_test_report'
     os.makedirs(output_dir, exist_ok=True)
     
-    # Log data information
+    # Print data summary
     print("\nData Summary:")
     print(f"Total observations: {len(data)}")
     print(f"Groups in {group_col}: {data[group_col].nunique()}")
@@ -172,25 +179,12 @@ def perform_hypothesis_test(data: pd.DataFrame,
     # Group data and check sample sizes
     grouped_data = data.groupby(group_col)[metric].apply(list)
     sample_sizes = grouped_data.apply(len)
-    min_sample_size = 2  # Minimum required sample size for ANOVA
+    min_sample_size = 2
     
-    if any(sample_sizes < min_sample_size):
-        print("\nUsing Kruskal-Wallis test due to small sample sizes")
-        return _perform_kruskal_test(data, grouped_data, metric, group_col, alpha, output_dir)
-    else:
-        print("\nPerforming one-way ANOVA")
-        return _perform_anova_test(data, grouped_data, metric, group_col, alpha, output_dir)
-
-def _perform_kruskal_test(data: pd.DataFrame, 
-                          grouped_data: pd.Series, 
-                          metric: str, 
-                          group_col: str, 
-                          alpha: float,
-                          output_dir: str) -> Dict[str, Any]:
-    """Helper function to perform Kruskal-Wallis test."""
     results = {}
     
     try:
+        # Perform Kruskal-Wallis test (non-parametric)
         h_stat, p_value = kruskal(*grouped_data)
         results['kruskal'] = {
             'h_statistic': h_stat,
@@ -201,76 +195,73 @@ def _perform_kruskal_test(data: pd.DataFrame,
                          f"in {metric} between groups.")
         }
         
-        # Create visualization
-        results['plot'] = _create_visualization(data, metric, group_col, output_dir, test_type='kruskal')
+        # Create visualizations
+        results['visualizations'] = create_visualizations(data, metric, group_col, output_dir)
+        
+        # Save results to CSV
+        results_csv_path = os.path.join(output_dir, f'{metric}_test_results.csv')
+        with open(results_csv_path, 'w') as f:
+            f.write(f"Debug - Start Date: {start_date}\n")
+            f.write(f"Debug - End Date: {end_date}\n\n")
+            f.write("GA4 Response Details:\n")
+            f.write(f"Date Range: {start_date} to {end_date}\n")
+            f.write(f"Property ID: {property_id}\n")
+            f.write(f"Currency Code: {response.metadata.currency_code}\n")
+            f.write(f"Time Zone: {response.metadata.time_zone}\n")
+            f.write(f"Dimensions: {response.dimension_headers}\n")
+            f.write(f"Metrics: {response.metric_headers}\n")
+            f.write(f"Row Count: {len(response.rows) if hasattr(response, 'rows') else 0}\n\n")
+            f.write("Data Summary:\n")
+            f.write(f"Total observations: {len(data)}\n")
+            f.write(f"Groups in {group_col}: {data[group_col].nunique()}\n")
+            f.write(f"Metric statistics for {metric}:\n")
+            f.write(data[metric].describe().to_string())
+            f.write("\n\nTest Results:\n")
+            for key, value in results['kruskal'].items():
+                f.write(f"{key}: {value}\n")
+        
+        # Print test results
+        print("\nTest Results:")
+        print(f"Kruskal-Wallis Results: {results['kruskal']}")
+        print(f"\nVisualizations saved as: {results['visualizations']}")
+        
+        return results
         
     except Exception as e:
-        results['error'] = f"Error in Kruskal-Wallis test: {str(e)}"
-        print(results['error'])
-    
-    return results
+        error_msg = f"Error in hypothesis testing: {str(e)}"
+        print(error_msg)
+        return {'error': error_msg}
 
-def _perform_anova_test(data: pd.DataFrame, 
-                        grouped_data: pd.Series, 
+def create_visualizations(data: pd.DataFrame, 
                         metric: str, 
                         group_col: str, 
-                        alpha: float,
-                        output_dir: str) -> Dict[str, Any]:
-    """Helper function to perform one-way ANOVA test."""
-    results = {}
+                        output_dir: str) -> Dict[str, str]:
+    """
+    Create and save visualizations for hypothesis testing results.
     
-    try:
-        # Perform one-way ANOVA
-        f_stat, p_value = f_oneway(*grouped_data)
-        results['anova'] = {
-            'f_statistic': f_stat,
-            'p_value': p_value,
-            'reject_null': p_value < alpha,
-            'conclusion': (f"{'Reject' if p_value < alpha else 'Fail to reject'} the null hypothesis. "
-                         f"{'There is' if p_value < alpha else 'There is no'} significant difference "
-                         f"in {metric} between groups.")
-        }
+    Args:
+        data (pd.DataFrame): Input data
+        metric (str): Metric being analyzed
+        group_col (str): Grouping column
+        output_dir (str): Directory to save plots
         
-        # Perform post-hoc analysis if ANOVA is significant
-        if p_value < alpha:
-            tukey = pairwise_tukeyhsd(data[metric], data[group_col], alpha=alpha)
-            results['post_hoc'] = {
-                'summary': str(tukey.summary()),
-                'significant_pairs': [
-                    f"{pair[0]} vs {pair[1]}" 
-                    for pair, reject in zip(tukey.groupsunique, tukey.reject) 
-                    if reject
-                ]
-            }
-        
-        # Create visualization
-        results['plot'] = _create_visualization(data, metric, group_col, output_dir, test_type='anova')
-        
-    except Exception as e:
-        results['error'] = f"Error in ANOVA test: {str(e)}"
-        print(results['error'])
-    
-    return results
-
-def _create_visualization(data: pd.DataFrame, 
-                          metric: str, 
-                          group_col: str, 
-                          output_dir: str,
-                          test_type: str) -> Dict[str, str]:
-    """Create and save visualization for hypothesis test results."""
-    plt.figure(figsize=(12, 6))
+    Returns:
+        Dict[str, str]: Dictionary with paths to saved plots
+    """
+    plots = {}
     
     # Create scatter plot
-    sns.scatterplot(x=group_col, y=metric, data=data)
-    plt.title(f'Dispersion of {metric} by {group_col}')
+    plt.figure(figsize=(12, 6))
+    sns.scatterplot(data=data, x=group_col, y=metric)
     plt.xticks(rotation=45, ha='right')
-    plt.grid(True)
+    plt.title(f'Distribution of {metric} by {group_col}')
     plt.tight_layout()
-    scatter_plot_filename = os.path.join(output_dir, f'{metric}_by_{group_col}_scatter.png')
-    plt.savefig(scatter_plot_filename, dpi=300, bbox_inches='tight')
+    scatter_path = os.path.join(output_dir, f'{metric}_by_{group_col}_scatter.png')
+    plt.savefig(scatter_path, dpi=300, bbox_inches='tight')
     plt.close()
+    plots['scatter_plot'] = scatter_path
     
-    # Create Gaussian bell curve plot
+    # Create bell curve (density plot)
     plt.figure(figsize=(12, 6))
     valid_labels = []
     for group in data[group_col].unique():
@@ -280,23 +271,63 @@ def _create_visualization(data: pd.DataFrame,
             valid_labels.append(group)
         else:
             print(f"Skipping group '{group}' due to zero variance.")
-    plt.title(f'Gaussian Bell Curve of {metric} by {group_col}')
-    plt.xlabel(metric)
-    plt.ylabel('Density')
-    plt.grid(True)
     if valid_labels:
+        plt.title(f'Density Distribution of {metric} by {group_col}')
+        plt.xlabel(metric)
+        plt.ylabel('Density')
+        plt.grid(True)
         plt.legend()
-    plt.tight_layout()
-    bell_curve_filename = os.path.join(output_dir, f'{metric}_by_{group_col}_bell_curve.png')
-    plt.savefig(bell_curve_filename, dpi=300, bbox_inches='tight')
-    plt.close()
+        plt.tight_layout()
+        bell_curve_path = os.path.join(output_dir, f'{metric}_by_{group_col}_bell_curve.png')
+        plt.savefig(bell_curve_path, dpi=300, bbox_inches='tight')
+        plt.close()
+        plots['bell_curve'] = bell_curve_path
+    else:
+        print("No valid groups with non-zero variance for Gaussian bell curve plot.")
+        plots['bell_curve'] = "No valid groups with non-zero variance for Gaussian bell curve plot."
     
-    return {'scatter_plot': scatter_plot_filename, 'bell_curve': bell_curve_filename}
+    return plots
+
+def validate_assumptions(data: pd.DataFrame, 
+                        metric: str, 
+                        group_col: str) -> Dict[str, Any]:
+    """
+    Validate statistical assumptions for hypothesis testing.
+    
+    Args:
+        data (pd.DataFrame): Input data
+        metric (str): Metric being analyzed
+        group_col (str): Grouping column
+        
+    Returns:
+        Dict[str, Any]: Dictionary containing validation results
+    """
+    results = {}
+    
+    # Test for normality (Shapiro-Wilk test)
+    _, p_value = shapiro(data[metric])
+    results['normality'] = {
+        'test': 'Shapiro-Wilk',
+        'p_value': p_value,
+        'is_normal': p_value > 0.05
+    }
+    
+    # Test for equal variances (Levene's test)
+    groups = [group for _, group in data.groupby(group_col)[metric]]
+    if len(groups) > 1:
+        _, p_value = levene(*groups)
+        results['equal_variance'] = {
+            'test': 'Levene',
+            'p_value': p_value,
+            'has_equal_variance': p_value > 0.05
+        }
+    
+    return results
 
 # Example usage
 if __name__ == "__main__":
     # Fetch data from Google Analytics
-    data = fetch_data_from_google_analytics()
+    data, start_date, end_date, property_id, response = fetch_data_from_google_analytics()
     
     # Debugging: Print the first few rows of the data and the column names
     print("Data columns:", data.columns)
@@ -307,23 +338,19 @@ if __name__ == "__main__":
             data=data,
             metric='eventCount',
             group_col='eventName',
-            alpha=0.05
+            alpha=0.05,
+            start_date=start_date,
+            end_date=end_date,
+            property_id=property_id,
+            response=response
         )
         
         if 'error' not in results:
-            print("\nTest Results:")
-            if 'anova' in results:
-                print("ANOVA Results:", results['anova'])
-            if 'kruskal' in results:
-                print("Kruskal-Wallis Results:", results['kruskal'])
-            if 'post_hoc' in results:
-                print("\nPost-hoc Analysis:")
-                print(results['post_hoc']['summary'])
-            print(f"\nVisualizations saved as: {results['plot']}")
+            print("\nDetailed Results:")
+            print(f"Statistical Test: {results['kruskal']}")
+            print(f"Visualizations: {results['visualizations']}")
         else:
-            print(f"Error: {results['error']}")
+            print(f"Error occurred: {results['error']}")
             
-    except ValueError as e:
-        print(f"Input error: {str(e)}")
     except Exception as e:
         print(f"Unexpected error: {str(e)}")
