@@ -1,6 +1,6 @@
 # Lean Six Sigma Analysis
 
-This repository contains scripts for performing Lean Six Sigma analysis using data from Google Analytics 4 (GA4). The scripts calculate various process capability indices, perform Gage R&R analysis, generate Pareto charts, and conduct ANOVA analysis to help identify and improve process performance.
+This repository contains scripts for performing Lean Six Sigma analysis using data from Google Analytics 4 (GA4). The scripts calculate various process capability indices, perform Gage R&R analysis, generate Pareto charts, conduct ANOVA analysis, and perform Design of Experiments (DOE) to help identify and improve process performance.
 
 ## Directory Structure
 
@@ -8,11 +8,41 @@ This repository contains scripts for performing Lean Six Sigma analysis using da
 src/
 ├── LICENSE
 ├── README.md
-├── GOOGLE_ANALYTICS_API.json
+├── anova_report
+│   ├── anova.log
+│   ├── averageSessionDuration_analysis.txt
+│   ├── averageSessionDuration_boxplot.png
+│   ├── bounceRate_analysis.txt
+│   ├── bounceRate_boxplot.png
+│   ├── eventCount_analysis.txt
+│   ├── eventCount_boxplot.png
+│   ├── raw_data.csv
+│   ├── userEngagementDuration_analysis.txt
+│   └── userEngagementDuration_boxplot.png
+├── blogtndx-59d7dc876bd1.json
+├── doe_report
+│   ├── design_matrix.csv
+│   ├── experiment_results.csv
+│   ├── normal_probability_plot.png
+│   ├── residual_histogram.png
+│   ├── residuals_vs_factor1.png
+│   ├── residuals_vs_factor2.png
+│   ├── residuals_vs_factor3.png
+│   ├── residuals_vs_fitted.png
+│   ├── residuals_vs_order.png
+│   ├── response_surface.png
+│   ├── systematic_variation_factor1.png
+│   ├── systematic_variation_factor2.png
+│   └── systematic_variation_factor3.png
 ├── gage_rnr_report
 │   ├── gage_rnr_report.html
 │   ├── gage_rnr_std_dev_chart.png
 │   └── gage_rnr_variance_chart.png
+├── hypothesis_test_report
+│   ├── eventCount_by_eventName_bell_curve.png
+│   ├── eventCount_by_eventName_scatter.png
+│   ├── eventCount_test_results.csv
+│   └── kruskal_results_eventCount.csv
 ├── pareto_report
 │   ├── pareto_analysis_results.csv
 │   └── pareto_chart.png
@@ -30,7 +60,9 @@ src/
 └── src
     ├── anova.py
     ├── common.py
+    ├── doe.py
     ├── gage_rnr.py
+    ├── hypothesis_testing.py
     ├── pareto.py
     └── process_capacity.py
 ```
@@ -42,9 +74,11 @@ src/
 - numpy
 - python-dotenv
 - statsmodels
-- scipy
 - seaborn
 - matplotlib
+- scipy
+- pyDOE
+- scikit-learn
 
 ## Setup
 
