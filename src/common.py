@@ -14,6 +14,7 @@ import logging
 from dotenv import load_dotenv
 from google.analytics.data_v1beta import BetaAnalyticsDataClient, RunReportRequest, Dimension, Metric, DateRange
 from scipy.stats import kruskal, f_oneway, ttest_ind, ttest_1samp
+from pyDOE import *
 
 # Load environment variables
 load_dotenv()
