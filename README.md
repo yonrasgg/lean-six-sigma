@@ -69,7 +69,7 @@ src/
 
 ## Requirements
 
-- google-analytics-data
+- google-analytics-data (API)
 - pandas
 - numpy
 - python-dotenv
